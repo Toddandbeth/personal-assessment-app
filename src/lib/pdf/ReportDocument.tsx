@@ -74,6 +74,22 @@ const styles = StyleSheet.create({
   },
   prompt: { flex: 1, fontSize: 8.5 },
   empty: { fontSize: 10, color: "#71717a" },
+  goalHeading: {
+    fontSize: 10,
+    fontWeight: 700,
+    marginTop: 16,
+    marginBottom: 4,
+    textTransform: "uppercase",
+    color: BRAND_NAVY,
+  },
+  goalSub: { fontSize: 8, fontWeight: 700, color: "#52525b", marginTop: 6, marginBottom: 2 },
+  goalItem: {
+    fontSize: 9,
+    backgroundColor: "#eceef1",
+    padding: 6,
+    borderRadius: 3,
+    marginBottom: 3,
+  },
 });
 
 function ScoreBarPdf({ stat, idSeed }: { stat: StatBlock; idSeed: string }) {
@@ -197,6 +213,28 @@ export default function ReportDocument({ units }: { units: ReportUnit[] }) {
                 </View>
               ))}
             </>
+          )}
+
+          {((unit.goalsBaseline?.length ?? 0) > 0 || (unit.goalsRetake?.length ?? 0) > 0) && (
+            <View wrap={false}>
+              <Text style={styles.goalHeading}>Goals</Text>
+              {(unit.goalsBaseline?.length ?? 0) > 0 && (
+                <View>
+                  <Text style={styles.goalSub}>Baseline</Text>
+                  {unit.goalsBaseline!.map((g, gi) => (
+                    <Text key={gi} style={styles.goalItem}>{g}</Text>
+                  ))}
+                </View>
+              )}
+              {(unit.goalsRetake?.length ?? 0) > 0 && (
+                <View>
+                  <Text style={styles.goalSub}>Retake</Text>
+                  {unit.goalsRetake!.map((g, gi) => (
+                    <Text key={gi} style={styles.goalItem}>{g}</Text>
+                  ))}
+                </View>
+              )}
+            </View>
           )}
         </Page>
       ))}

@@ -16,6 +16,9 @@ interface GroupOption {
 function GroupSubRow({ group }: { group: GroupOption }) {
   const [expanded, setExpanded] = useState(false);
   const [unit, setUnit] = useState<ReportUnit | null>(null);
+  const [completedFirstNames, setCompletedFirstNames] = useState<string[]>([]);
+  const [goalsBaseline, setGoalsBaseline] = useState<string[]>([]);
+  const [goalsRetake, setGoalsRetake] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -36,6 +39,9 @@ function GroupSubRow({ group }: { group: GroupOption }) {
         return;
       }
       setUnit(data.units[0]);
+      setCompletedFirstNames(data.completedFirstNames ?? []);
+      setGoalsBaseline(data.goalsBaseline ?? []);
+      setGoalsRetake(data.goalsRetake ?? []);
     } catch {
       setError("Something went wrong. Please try again.");
     } finally {
@@ -54,10 +60,55 @@ function GroupSubRow({ group }: { group: GroupOption }) {
         Group {group.number}
       </button>
       {expanded && (
-        <div className="pl-4">
+        <div className="flex flex-col gap-4 pl-4">
           {loading && <p className="text-xs text-zinc-500">Loading...</p>}
           {error && <p className="text-xs text-red-600">{error}</p>}
           {unit && <ReportUnitCard unit={unit} />}
+
+          {completedFirstNames.length > 0 && (
+            <div className="rounded-lg bg-white p-3">
+              <p className="text-xs font-semibold uppercase tracking-wide text-[#253551]">
+                Completed So Far
+              </p>
+              <ul className="mt-2 flex flex-col gap-1 text-sm text-zinc-700">
+                {completedFirstNames.map((name, i) => (
+                  <li key={i}>{name}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {(goalsBaseline.length > 0 || goalsRetake.length > 0) && (
+            <div className="rounded-lg bg-white p-3">
+              <p className="text-xs font-semibold uppercase tracking-wide text-[#253551]">
+                Goals
+              </p>
+              {goalsBaseline.length > 0 && (
+                <div className="mt-2">
+                  <p className="text-xs font-medium text-zinc-500">Baseline</p>
+                  <ul className="mt-1 flex flex-col gap-2 text-sm text-zinc-700">
+                    {goalsBaseline.map((goal, i) => (
+                      <li key={i} className="rounded-md bg-[#ccd0d6]/30 p-2">
+                        {goal}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {goalsRetake.length > 0 && (
+                <div className="mt-3">
+                  <p className="text-xs font-medium text-zinc-500">Retake</p>
+                  <ul className="mt-1 flex flex-col gap-2 text-sm text-zinc-700">
+                    {goalsRetake.map((goal, i) => (
+                      <li key={i} className="rounded-md bg-[#ccd0d6]/30 p-2">
+                        {goal}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       )}
     </div>

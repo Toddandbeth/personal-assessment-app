@@ -4,6 +4,12 @@
 //   npx supabase gen types typescript --project-id <ref> > src/lib/supabase/types.ts
 
 export type Track = "group" | "standalone";
+// The home screen's three entry points. "returning" is purely a
+// client-side routing concept — it's never sent to an RPC. Once
+// da_find_returning resolves a candidate, its own track is always a plain
+// Track ("group" or "standalone"), same as if the person had typed their
+// Region/Group or picked a standalone category themselves.
+export type EntryTrack = Track | "returning";
 export type StandaloneCategory = "men" | "high_school";
 export type SubmissionKind = "baseline" | "retake";
 export type ConditionalFlag = "married" | "has_children" | "single";
@@ -20,6 +26,18 @@ export interface IdentityCheckResult {
   goal_text: string | null;
 }
 
+export interface ReturningCandidate {
+  track: Track;
+  region: string | null;
+  group_number: string | null;
+  standalone_category: StandaloneCategory | null;
+}
+
+export type FindReturningResult =
+  | { status: "not_found" }
+  | ({ status: "single" } & ReturningCandidate)
+  | { status: "multiple"; candidates: ReturningCandidate[] };
+
 export interface Question {
   id: string;
   category_id: string;
@@ -33,6 +51,8 @@ export interface Question {
 export interface StartSubmissionResult {
   submission_id: string;
   category: StandaloneCategory;
+  is_married: boolean | null;
+  has_children: boolean | null;
 }
 
 export interface ComparisonRow {
@@ -45,6 +65,8 @@ export interface ComparisonRow {
 
 export interface ComparisonResult {
   rows: ComparisonRow[];
+  goal_baseline: string | null;
+  goal_retake: string | null;
 }
 
 export interface ExistingResponse {
@@ -61,4 +83,5 @@ export const RPC = {
   completeSubmission: "da_complete_submission",
   getComparison: "da_get_comparison",
   getResponses: "da_get_responses",
+  findReturning: "da_find_returning",
 } as const;

@@ -35,6 +35,10 @@ export interface ReportUnit {
   baselineTotal: number;
   retakeTotal: number;
   sections: ReportSection[];
+  // Only set on single-group units (anonymous plain-text goal lists). Never
+  // set on combined/region/category/general units.
+  goalsBaseline?: string[];
+  goalsRetake?: string[];
 }
 
 function round1(n: number): number {
@@ -170,4 +174,46 @@ export async function computeReportUnit(
   }
 
   return { title, baselineTotal, retakeTotal, sections };
+}
+
+// Anonymous goal texts for a set of participants (a single group), split by
+// which sitting they were written at. Goals are stored as the goal
+// question's response row (answer_text) — never with names attached here.
+export async function fetchGoalsForParticipants(
+  supabase: SupabaseClient,
+  categoryId: string,
+  participantIds: string[]
+): Promise<{ goalsBaseline: string[]; goalsRetake: string[] }> {
+  const empty = { goalsBaseline: [] as string[], goalsRetake: [] as string[] };
+  if (participantIds.length === 0) return empty;
+
+  const [{ data: submissions }, { data: goalQuestions }] = await Promise.all([
+    supabase
+      .from("da_submissions")
+      .select("id, kind")
+      .in("participant_id", participantIds)
+      .eq("status", "completed")
+      .is("archived_at", null),
+    supabase.from("da_questions").select("id").eq("category_id", categoryId).eq("is_goal", true),
+  ]);
+  const submissionIds = (submissions ?? []).map((s) => s.id);
+  const goalQuestionIds = (goalQuestions ?? []).map((q) => q.id);
+  if (submissionIds.length === 0 || goalQuestionIds.length === 0) return empty;
+
+  const { data: responses } = await supabase
+    .from("da_responses")
+    .select("submission_id, answer_text")
+    .in("question_id", goalQuestionIds)
+    .in("submission_id", submissionIds);
+
+  const goalBySubmission = new Map<string, string>();
+  for (const r of responses ?? []) {
+    const text = r.answer_text?.trim();
+    if (text) goalBySubmission.set(r.submission_id, text);
+  }
+  const pick = (kind: string) =>
+    (submissions ?? [])
+      .filter((s) => s.kind === kind && goalBySubmission.has(s.id))
+      .map((s) => goalBySubmission.get(s.id)!);
+  return { goalsBaseline: pick("baseline"), goalsRetake: pick("retake") };
 }

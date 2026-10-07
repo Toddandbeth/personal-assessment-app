@@ -4,19 +4,24 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import EntryForm, { type EntryFormValues } from "@/components/EntryForm";
+import ReturningEntryForm, { type ReturningEntryValues } from "@/components/ReturningEntryForm";
+import ReturningPicker from "@/components/ReturningPicker";
+import ReturningBaselinePrompt from "@/components/ReturningBaselinePrompt";
+import ReturningNotFound from "@/components/ReturningNotFound";
 import RetakeConfirmation from "@/components/RetakeConfirmation";
 import CompletedPairPrompt from "@/components/CompletedPairPrompt";
 import ComingSoonPlaceholder from "@/components/ComingSoonPlaceholder";
 import MarriedChildrenGate from "@/components/MarriedChildrenGate";
 import QuestionForm from "@/components/QuestionForm";
 import ComparisonView from "@/components/ComparisonView";
-import { archiveAndRestart, checkIdentity, type IdentityArgs } from "@/lib/identity";
+import { archiveAndRestart, checkIdentity, findReturning, type IdentityArgs } from "@/lib/identity";
 import { getComparison, startSubmission } from "@/lib/assessment";
 import type {
   ComparisonRow,
+  EntryTrack,
+  ReturningCandidate,
   StandaloneCategory,
   SubmissionKind,
-  Track,
 } from "@/lib/supabase/types";
 
 type Phase =
@@ -27,10 +32,14 @@ type Phase =
   | "completed_pair"
   | "flags"
   | "questions"
-  | "baseline_done"
-  | "comparison";
+  | "baseline_results"
+  | "comparison"
+  | "results_error"
+  | "returning_picker"
+  | "returning_baseline_prompt"
+  | "returning_not_found";
 
-export default function StartFlow({ track }: { track: Track }) {
+export default function StartFlow({ track }: { track: EntryTrack }) {
   const router = useRouter();
   const [phase, setPhase] = useState<Phase>("entry");
   const [submitting, setSubmitting] = useState(false);
@@ -45,11 +54,16 @@ export default function StartFlow({ track }: { track: Track }) {
   const [submissionId, setSubmissionId] = useState<string | null>(null);
   const [flagsSubmitting, setFlagsSubmitting] = useState(false);
   const [comparisonRows, setComparisonRows] = useState<ComparisonRow[]>([]);
+  const [goalBaseline, setGoalBaseline] = useState<string | null>(null);
+  const [goalRetake, setGoalRetake] = useState<string | null>(null);
   const [comparisonLoading, setComparisonLoading] = useState(false);
+
+  const [returningIdentity, setReturningIdentity] = useState<ReturningEntryValues | null>(null);
+  const [returningCandidates, setReturningCandidates] = useState<ReturningCandidate[]>([]);
 
   async function handleSubmit(values: EntryFormValues) {
     const args: IdentityArgs = {
-      track,
+      track: track as "group" | "standalone",
       region: track === "group" ? values.region : null,
       groupNumber: track === "group" ? values.groupNumber : null,
       standaloneCategory: track === "standalone" ? values.standaloneCategory : null,
@@ -92,6 +106,67 @@ export default function StartFlow({ track }: { track: Track }) {
     }
   }
 
+  async function handleReturningSubmit(values: ReturningEntryValues) {
+    setReturningIdentity(values);
+    setSubmitting(true);
+    setErrorMessage(null);
+    try {
+      const result = await findReturning(values.firstName, values.lastFour);
+      if (result.status === "not_found") {
+        setPhase("returning_not_found");
+      } else if (result.status === "single") {
+        await resolveReturningCandidate(result, values);
+      } else {
+        setReturningCandidates(result.candidates);
+        setPhase("returning_picker");
+      }
+    } catch {
+      setErrorMessage("Something went wrong. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  async function resolveReturningCandidate(
+    candidate: ReturningCandidate,
+    identity: ReturningEntryValues
+  ) {
+    const args: IdentityArgs = {
+      track: candidate.track,
+      region: candidate.region,
+      groupNumber: candidate.group_number,
+      standaloneCategory: candidate.standalone_category,
+      firstName: identity.firstName,
+      lastFour: identity.lastFour,
+    };
+    setSubmitting(true);
+    setErrorMessage(null);
+    try {
+      const result = await checkIdentity(args);
+      setLastArgs(args);
+      setGoalText(result.goal_text);
+      setCategory(result.category);
+
+      if (result.status === "retake") {
+        // Exactly one completed submission (baseline) and no retake yet —
+        // the case item 2 calls "results from last time, or complete the
+        // final assessment."
+        setPhase("returning_baseline_prompt");
+      } else if (result.status === "completed_pair") {
+        setPhase("completed_pair");
+      } else {
+        // "first_time" here means a record exists but nothing's been
+        // completed yet (an abandoned in-progress baseline) — there's
+        // nothing to return to, so this is treated the same as no match.
+        setPhase("returning_not_found");
+      }
+    } catch {
+      setErrorMessage("Something went wrong. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
   async function beginSubmission(
     kind: SubmissionKind,
     argsOverride?: IdentityArgs,
@@ -102,7 +177,10 @@ export default function StartFlow({ track }: { track: Track }) {
     if (!effectiveArgs) return;
     setPendingKind(kind);
 
-    if (effectiveCategory === "men") {
+    // Married/children is only ever asked at baseline — a retake always
+    // inherits those values automatically (da_start_submission resolves
+    // them server-side), so it never shows this screen.
+    if (kind === "baseline" && effectiveCategory === "men") {
       setPhase("flags");
       return;
     }
@@ -112,8 +190,8 @@ export default function StartFlow({ track }: { track: Track }) {
     try {
       const result = await startSubmission(effectiveArgs, kind, null, null);
       setSubmissionId(result.submission_id);
-      setIsMarried(null);
-      setHasChildren(null);
+      setIsMarried(result.is_married);
+      setHasChildren(result.has_children);
       setPhase("questions");
     } catch {
       setErrorMessage("Something went wrong starting your assessment. Please try again.");
@@ -129,8 +207,8 @@ export default function StartFlow({ track }: { track: Track }) {
     try {
       const result = await startSubmission(lastArgs, pendingKind, married, children);
       setSubmissionId(result.submission_id);
-      setIsMarried(married);
-      setHasChildren(children);
+      setIsMarried(result.is_married);
+      setHasChildren(result.has_children);
       setPhase("questions");
     } catch {
       setErrorMessage("Something went wrong starting your assessment. Please try again.");
@@ -139,38 +217,25 @@ export default function StartFlow({ track }: { track: Track }) {
     }
   }
 
-  async function handleQuestionsCompleted() {
-    if (pendingKind === "baseline") {
-      setPhase("baseline_done");
-      return;
-    }
-
+  async function loadResults(targetPhase: "baseline_results" | "comparison") {
     if (!lastArgs) return;
     setComparisonLoading(true);
     try {
       const result = await getComparison(lastArgs);
       setComparisonRows(result.rows);
-      setPhase("comparison");
+      setGoalBaseline(result.goal_baseline ?? null);
+      setGoalRetake(result.goal_retake ?? null);
+      setPhase(targetPhase);
     } catch {
-      setErrorMessage("Your retake was saved, but we couldn't load your comparison.");
-      setPhase("baseline_done");
+      setErrorMessage("Something went wrong loading your results. Please try again.");
+      setPhase("results_error");
     } finally {
       setComparisonLoading(false);
     }
   }
 
-  async function handleSeeResults() {
-    if (!lastArgs) return;
-    setComparisonLoading(true);
-    try {
-      const result = await getComparison(lastArgs);
-      setComparisonRows(result.rows);
-      setPhase("comparison");
-    } catch {
-      setErrorMessage("Something went wrong loading your results. Please try again.");
-    } finally {
-      setComparisonLoading(false);
-    }
+  async function handleQuestionsCompleted() {
+    await loadResults(pendingKind === "baseline" ? "baseline_results" : "comparison");
   }
 
   if (phase === "begin") {
@@ -216,7 +281,7 @@ export default function StartFlow({ track }: { track: Track }) {
   if (phase === "completed_pair") {
     return (
       <CompletedPairPrompt
-        onSeeResults={handleSeeResults}
+        onSeeResults={() => loadResults("comparison")}
         onStartNew={async () => {
           if (!lastArgs) return;
           await archiveAndRestart(lastArgs);
@@ -249,13 +314,36 @@ export default function StartFlow({ track }: { track: Track }) {
     );
   }
 
-  if (phase === "baseline_done") {
+  if (phase === "baseline_results") {
+    return (
+      <ComparisonView
+        rows={comparisonRows}
+        firstName={lastArgs?.firstName ?? ""}
+        goalBaseline={goalBaseline}
+        goalRetake={goalRetake}
+        baselineOnly
+      />
+    );
+  }
+
+  if (phase === "comparison") {
+    return (
+      <ComparisonView
+        rows={comparisonRows}
+        firstName={lastArgs?.firstName ?? ""}
+        goalBaseline={goalBaseline}
+        goalRetake={goalRetake}
+      />
+    );
+  }
+
+  if (phase === "results_error") {
     return (
       <div className="flex flex-col items-center gap-4 text-center">
-        <h1 className="text-xl font-semibold text-[#253551]">All done — thank you!</h1>
+        <h1 className="text-xl font-semibold text-[#253551]">Your assessment was saved</h1>
         <p className="max-w-sm text-zinc-600">
-          Your assessment has been saved. When your group does a retake, come back
-          here and use the same details to see your before-and-after comparison.
+          We just couldn&apos;t load your results right now. Please try again later using
+          the same details.
         </p>
         {errorMessage && <p className="text-sm text-red-600">{errorMessage}</p>}
         <Link
@@ -268,12 +356,44 @@ export default function StartFlow({ track }: { track: Track }) {
     );
   }
 
-  if (phase === "comparison") {
-    return <ComparisonView rows={comparisonRows} firstName={lastArgs?.firstName ?? ""} />;
+  if (phase === "returning_picker") {
+    return (
+      <ReturningPicker
+        candidates={returningCandidates}
+        onPick={(c) => returningIdentity && resolveReturningCandidate(c, returningIdentity)}
+        onBackOut={() => router.push("/")}
+      />
+    );
+  }
+
+  if (phase === "returning_baseline_prompt") {
+    return (
+      <ReturningBaselinePrompt
+        submitting={submitting}
+        errorMessage={errorMessage}
+        onSeeResults={() => loadResults("baseline_results")}
+        onCompleteAssessment={() => beginSubmission("retake")}
+        onReturnHome={() => router.push("/")}
+      />
+    );
+  }
+
+  if (phase === "returning_not_found") {
+    return <ReturningNotFound />;
   }
 
   if (comparisonLoading) {
     return <p className="text-center text-sm text-zinc-500">Loading your results...</p>;
+  }
+
+  if (track === "returning") {
+    return (
+      <ReturningEntryForm
+        submitting={submitting}
+        errorMessage={errorMessage}
+        onSubmit={handleReturningSubmit}
+      />
+    );
   }
 
   return (

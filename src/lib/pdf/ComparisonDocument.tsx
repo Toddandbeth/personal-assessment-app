@@ -1,4 +1,4 @@
-import { Document, Page, Text, View, StyleSheet } from "@react-pdf/renderer";
+import { Document, Page, Text, View, StyleSheet, Svg, Polygon } from "@react-pdf/renderer";
 import { deltaColor, formatDelta } from "@/lib/reportVisuals";
 import type { ComparisonRow } from "@/lib/supabase/types";
 
@@ -38,9 +38,28 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     paddingHorizontal: 4,
   },
+  goalBox: {
+    backgroundColor: "#eceef1",
+    padding: 10,
+    borderRadius: 4,
+    marginBottom: 4,
+  },
+  goalLabel: {
+    fontSize: 9,
+    fontWeight: 700,
+    textTransform: "uppercase",
+    color: BRAND_NAVY,
+    marginBottom: 2,
+  },
+  goalText: { fontSize: 10 },
   prompt: { flex: 1 },
   cell: { width: 50, textAlign: "center" },
-  changeCell: { width: 60, textAlign: "center", fontWeight: 700 },
+  changeCellBox: {
+    width: 60,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+  },
   headerCell: { width: 50, textAlign: "center", fontWeight: 700 },
   headerChangeCell: { width: 60, textAlign: "center", fontWeight: 700 },
 });
@@ -48,9 +67,15 @@ const styles = StyleSheet.create({
 export default function ComparisonDocument({
   rows,
   firstName,
+  baselineOnly = false,
+  goalBaseline = null,
+  goalRetake = null,
 }: {
   rows: ComparisonRow[];
   firstName: string;
+  baselineOnly?: boolean;
+  goalBaseline?: string | null;
+  goalRetake?: string | null;
 }) {
   const sections: { section: string; rows: ComparisonRow[] }[] = [];
   for (const row of rows) {
@@ -67,17 +92,40 @@ export default function ComparisonDocument({
       <Page size="LETTER" style={styles.page}>
         <View style={styles.header}>
           <Text style={styles.title}>{firstName ? `${firstName}'s Results` : "Your Results"}</Text>
-          <Text style={styles.subtitle}>Before-and-after comparison</Text>
+          <Text style={styles.subtitle}>
+            {baselineOnly ? "Your answers from this assessment" : "Before-and-after comparison"}
+          </Text>
         </View>
+
+        {(goalBaseline || goalRetake) && (
+          <View style={styles.goalBox}>
+            {goalBaseline && (
+              <View>
+                <Text style={styles.goalLabel}>Your goal</Text>
+                <Text style={styles.goalText}>{goalBaseline}</Text>
+              </View>
+            )}
+            {goalRetake && (
+              <View style={{ marginTop: goalBaseline ? 8 : 0 }}>
+                <Text style={styles.goalLabel}>Your goal going forward</Text>
+                <Text style={styles.goalText}>{goalRetake}</Text>
+              </View>
+            )}
+          </View>
+        )}
 
         {sections.map((s) => (
           <View key={s.section} wrap={false}>
             <Text style={styles.section}>{s.section}</Text>
             <View style={styles.headerRow}>
               <Text style={styles.prompt}>Question</Text>
-              <Text style={styles.headerCell}>Before</Text>
-              <Text style={styles.headerCell}>After</Text>
-              <Text style={styles.headerChangeCell}>Change</Text>
+              <Text style={styles.headerCell}>{baselineOnly ? "Score" : "Before"}</Text>
+              {!baselineOnly && (
+                <>
+                  <Text style={styles.headerCell}>After</Text>
+                  <Text style={styles.headerChangeCell}>Change</Text>
+                </>
+              )}
             </View>
             {s.rows.map((row) => {
               const hasBoth = row.baseline_score !== null && row.retake_score !== null;
@@ -86,17 +134,32 @@ export default function ComparisonDocument({
                 <View key={row.prompt} style={styles.row}>
                   <Text style={styles.prompt}>{row.prompt}</Text>
                   <Text style={styles.cell}>{row.baseline_score ?? "–"}</Text>
-                  <Text style={styles.cell}>{row.retake_score ?? "–"}</Text>
-                  <Text
-                    style={[
-                      styles.changeCell,
-                      { color: delta === null ? "#a1a1aa" : deltaColor(delta) },
-                    ]}
-                  >
-                    {delta === null
-                      ? "–"
-                      : `${delta > 0 ? "▲" : delta < 0 ? "▼" : "–"} ${formatDelta(delta)}`}
-                  </Text>
+                  {!baselineOnly && (
+                    <>
+                      <Text style={styles.cell}>{row.retake_score ?? "–"}</Text>
+                      <View style={styles.changeCellBox}>
+                        {delta !== null && delta !== 0 && (
+                          // Drawn shape, not a text glyph: Helvetica has no
+                          // arrow characters and silently substitutes stray
+                          // ones (▲ printed as "²", ▼ as "¼").
+                          <Svg width={7} height={7} style={{ marginRight: 3 }}>
+                            <Polygon
+                              points={delta > 0 ? "3.5,0 7,7 0,7" : "0,0 7,0 3.5,7"}
+                              fill={deltaColor(delta)}
+                            />
+                          </Svg>
+                        )}
+                        <Text
+                          style={{
+                            fontWeight: 700,
+                            color: delta === null ? "#a1a1aa" : deltaColor(delta),
+                          }}
+                        >
+                          {delta === null ? "-" : formatDelta(delta)}
+                        </Text>
+                      </View>
+                    </>
+                  )}
                 </View>
               );
             })}

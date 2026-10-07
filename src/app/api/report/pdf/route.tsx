@@ -11,12 +11,15 @@ export async function POST(request: Request) {
   const body = await request.json().catch(() => null);
   const rows = body?.rows as ComparisonRow[] | undefined;
   const firstName = typeof body?.firstName === "string" ? body.firstName : "";
+  const baselineOnly = body?.baselineOnly === true;
+  const goalBaseline = typeof body?.goalBaseline === "string" ? body.goalBaseline : null;
+  const goalRetake = typeof body?.goalRetake === "string" ? body.goalRetake : null;
 
   if (!Array.isArray(rows) || rows.length === 0) {
     return NextResponse.json({ error: "No results to export." }, { status: 400 });
   }
 
-  const document = <ComparisonDocument rows={rows} firstName={firstName} />;
+  const document = <ComparisonDocument rows={rows} firstName={firstName} baselineOnly={baselineOnly} goalBaseline={goalBaseline} goalRetake={goalRetake} />;
   try {
     const buffer = await renderPdf(document);
     return new NextResponse(new Uint8Array(buffer), {

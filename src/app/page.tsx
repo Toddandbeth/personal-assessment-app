@@ -36,11 +36,18 @@ export default function Home() {
           >
             I&apos;m on my own
           </Link>
+          <Link
+            href="/start?track=returning"
+            className="rounded-full border border-[#ccd0d6] px-6 py-4 text-base font-semibold text-[#253551] hover:bg-white"
+          >
+            I&apos;m returning
+          </Link>
         </div>
 
         <Link href="/admin" className="text-xs text-[#7993c2] hover:text-[#253551]">
           Admin access
         </Link>
+        <p className="text-[10px] text-zinc-400">Version {process.env.NEXT_PUBLIC_BUILD_ID}</p>
       </div>
     </div>
   );

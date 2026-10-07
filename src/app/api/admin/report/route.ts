@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { isAdminRequest } from "@/lib/admin/session";
 import { createServiceClient } from "@/lib/supabase/serviceClient";
-import { computeReportUnit, type ReportUnit } from "@/lib/admin/report";
+import { computeReportUnit, fetchGoalsForParticipants, type ReportUnit } from "@/lib/admin/report";
 
 export async function GET(request: Request) {
   if (!(await isAdminRequest())) {
@@ -42,16 +42,56 @@ export async function GET(request: Request) {
 
       const { data: participants } = await supabase
         .from("da_participants")
-        .select("id")
+        .select("id, first_name")
         .eq("group_id", group.id);
+
+      const participantIds = (participants ?? []).map((p) => p.id);
 
       const unit = await computeReportUnit(
         supabase,
         region.category_id,
-        (participants ?? []).map((p) => p.id),
+        participantIds,
         `${region.name} — Group ${group.number}`
       );
-      return NextResponse.json({ units: [unit] });
+
+      // Group-scope-only extras: a plain roster of who's completed so far
+      // (on-screen/admin-only — never in any PDF), and the anonymous goal
+      // texts, split by sitting. The goals also ride along on group units in
+      // the region PDF bundle (see scope=region&full=true).
+      let completedFirstNames: string[] = [];
+      let goalsBaseline: string[] = [];
+      let goalsRetake: string[] = [];
+
+      if (participantIds.length > 0) {
+        const { data: submissions } = await supabase
+          .from("da_submissions")
+          .select("id, participant_id, kind")
+          .in("participant_id", participantIds)
+          .eq("status", "completed")
+          .is("archived_at", null);
+
+        const nameById = new Map(
+          (participants ?? []).map((p) => [p.id, p.first_name])
+        );
+        const completedIds = new Set((submissions ?? []).map((s) => s.participant_id));
+        completedFirstNames = Array.from(completedIds)
+          .map((id) => nameById.get(id))
+          .filter((name): name is string => Boolean(name))
+          .sort((a, b) => a.localeCompare(b));
+
+        ({ goalsBaseline, goalsRetake } = await fetchGoalsForParticipants(
+          supabase,
+          region.category_id,
+          participantIds
+        ));
+      }
+
+      return NextResponse.json({
+        units: [unit],
+        completedFirstNames,
+        goalsBaseline,
+        goalsRetake,
+      });
     }
 
     if (scope === "region") {
@@ -111,14 +151,20 @@ export async function GET(request: Request) {
         const groupParticipantIds = (participants ?? []).map((p) => p.id);
         allParticipantIds.push(...groupParticipantIds);
 
-        groupUnits.push(
-          await computeReportUnit(
-            supabase,
-            region.category_id,
-            groupParticipantIds,
-            `${region.name} — Group ${g.number}`
-          )
+        const groupUnit = await computeReportUnit(
+          supabase,
+          region.category_id,
+          groupParticipantIds,
+          `${region.name} — Group ${g.number}`
         );
+        // Anonymous goal lists ride along on group pages only, so the PDF
+        // matches the on-screen group view.
+        const goals = await fetchGoalsForParticipants(
+          supabase,
+          region.category_id,
+          groupParticipantIds
+        );
+        groupUnits.push({ ...groupUnit, ...goals });
       }
 
       const units: ReportUnit[] = [];

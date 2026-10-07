@@ -33,6 +33,7 @@ export default function QuestionForm({
   const [goalSaving, setGoalSaving] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [reviewing, setReviewing] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -114,18 +115,32 @@ export default function QuestionForm({
     }
   }
 
-  async function handleGoalBlur() {
-    if (!goalQuestion) return;
+  // Saves the goal explicitly. Relying only on the textarea's blur event is
+  // unreliable (tapping a button on a phone often doesn't blur it), so this
+  // also runs before review and before final submit.
+  async function persistGoal(): Promise<boolean> {
+    if (!goalQuestion) return true;
     const trimmed = goalText.trim();
-    if (trimmed.length === 0) return;
+    if (trimmed.length === 0) return true;
     setGoalSaving(true);
     try {
       await saveResponse(submissionId, goalQuestion.id, null, trimmed);
+      return true;
     } catch {
-      // Goal is optional; a failed save here just retries on the next blur.
+      return false;
     } finally {
       setGoalSaving(false);
     }
+  }
+
+  async function handleGoalBlur() {
+    await persistGoal();
+  }
+
+  async function handleReview() {
+    if (!allAnswered) return;
+    await persistGoal();
+    setReviewing(true);
   }
 
   const allAnswered =
@@ -137,6 +152,10 @@ export default function QuestionForm({
     setSubmitting(true);
     setSubmitError(null);
     try {
+      if (!(await persistGoal())) {
+        setSubmitError("We couldn't save your goal. Please try again.");
+        return;
+      }
       await completeSubmission(submissionId);
       await onCompleted();
     } catch {
@@ -148,12 +167,93 @@ export default function QuestionForm({
     }
   }
 
+  function goToQuestion(questionId: string) {
+    setReviewing(false);
+    // Wait for the editable view to render before trying to scroll to it.
+    requestAnimationFrame(() => {
+      document.getElementById(`question-${questionId}`)?.scrollIntoView({ block: "center" });
+    });
+  }
+
   if (loadError) {
     return <p className="text-sm text-red-600">{loadError}</p>;
   }
 
   if (!questions) {
     return <p className="text-sm text-zinc-500">Loading questions...</p>;
+  }
+
+  if (reviewing) {
+    return (
+      <div className="flex w-full flex-col gap-6">
+        <div>
+          <h1 className="text-xl font-semibold text-[#253551]">Review your answers</h1>
+          <p className="mt-1 text-sm text-zinc-600">
+            Tap Change on anything you&apos;d like to update before submitting.
+          </p>
+        </div>
+
+        {sections.map((group) => (
+          <div key={group.section} className="flex flex-col gap-3">
+            <h2 className="-mx-6 bg-[#253551] px-6 py-2.5 text-sm font-semibold uppercase tracking-wide text-white">
+              {group.section}
+            </h2>
+            {group.questions.map((q) => (
+              <div
+                key={q.id}
+                className="flex items-center justify-between gap-3 rounded-lg bg-[#ccd0d6]/20 p-3"
+              >
+                <div>
+                  <p className="text-sm text-zinc-800">{q.prompt}</p>
+                  <p className="mt-1 text-lg font-bold text-[#253551]">{answers[q.id]}</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => goToQuestion(q.id)}
+                  className="shrink-0 rounded-full border border-[#ccd0d6] px-3 py-1.5 text-xs font-medium text-[#253551] hover:bg-white"
+                >
+                  Change
+                </button>
+              </div>
+            ))}
+          </div>
+        ))}
+
+        {goalQuestion && goalText.trim() && (
+          <div className="flex items-start justify-between gap-3 rounded-lg bg-[#ccd0d6]/20 p-3">
+            <div>
+              <p className="text-sm text-zinc-800">{goalQuestion.prompt}</p>
+              <p className="mt-1 text-sm text-zinc-700">{goalText}</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => goToQuestion(goalQuestion.id)}
+              className="shrink-0 rounded-full border border-[#ccd0d6] px-3 py-1.5 text-xs font-medium text-[#253551] hover:bg-white"
+            >
+              Change
+            </button>
+          </div>
+        )}
+
+        {submitError && <p className="text-sm text-red-600">{submitError}</p>}
+
+        <button
+          type="button"
+          disabled={submitting}
+          onClick={handleSubmit}
+          className="rounded-full bg-[#253551] px-5 py-3 text-sm font-medium text-white hover:bg-[#1a2740] disabled:opacity-50"
+        >
+          {submitting ? "Submitting..." : "Confirm & Submit"}
+        </button>
+        <button
+          type="button"
+          onClick={() => setReviewing(false)}
+          className="text-sm font-medium text-[#7993c2] hover:text-[#253551]"
+        >
+          ← Back to editing
+        </button>
+      </div>
+    );
   }
 
   return (
@@ -164,7 +264,7 @@ export default function QuestionForm({
             {group.section}
           </h2>
           {group.questions.map((q) => (
-            <div key={q.id} className="flex flex-col gap-2">
+            <div key={q.id} id={`question-${q.id}`} className="flex flex-col gap-2 scroll-mt-6">
               <p className="text-base font-semibold text-zinc-900">{q.prompt}</p>
               <div className="flex gap-2">
                 {SCORES.map((score) => (
@@ -193,7 +293,7 @@ export default function QuestionForm({
       ))}
 
       {goalQuestion && (
-        <div className="flex flex-col gap-2">
+        <div id={`question-${goalQuestion.id}`} className="flex flex-col gap-2 scroll-mt-6">
           <h2 className="-mx-6 bg-[#253551] px-6 py-2.5 text-sm font-semibold uppercase tracking-wide text-white">
             {goalQuestion.section}
           </h2>
@@ -212,19 +312,13 @@ export default function QuestionForm({
         </div>
       )}
 
-      {submitError && <p className="text-sm text-red-600">{submitError}</p>}
-
       <button
         type="button"
-        disabled={!allAnswered || submitting}
-        onClick={handleSubmit}
+        disabled={!allAnswered}
+        onClick={handleReview}
         className="rounded-full bg-[#253551] px-5 py-3 text-sm font-medium text-white hover:bg-[#1a2740] disabled:opacity-50"
       >
-        {submitting
-          ? "Submitting..."
-          : allAnswered
-          ? "Submit Assessment"
-          : "Answer all questions to continue"}
+        {allAnswered ? "Review & Submit" : "Answer all questions to continue"}
       </button>
     </div>
   );

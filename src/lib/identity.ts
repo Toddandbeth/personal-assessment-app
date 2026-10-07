@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/client";
 import {
   RPC,
+  type FindReturningResult,
   type IdentityCheckResult,
   type StandaloneCategory,
   type Track,
@@ -45,4 +46,23 @@ export async function archiveAndRestart(
   );
   if (error) throw error;
   return data as IdentityCheckResult;
+}
+
+// "I'm returning" — looks up a participant by first name + last four only.
+// Never returns a raw participant/group id (see security model note in
+// supabase/migrations/0001_init.sql) — only the same Region/Group/category
+// fields the normal entry form already collects, so the caller can
+// immediately reconstruct IdentityArgs and re-verify via checkIdentity
+// exactly as if the person had typed those fields in themselves.
+export async function findReturning(
+  firstName: string,
+  lastFour: string
+): Promise<FindReturningResult> {
+  const supabase = createClient();
+  const { data, error } = await supabase.rpc(RPC.findReturning, {
+    p_first_name: firstName,
+    p_last_four: lastFour,
+  });
+  if (error) throw error;
+  return data as FindReturningResult;
 }

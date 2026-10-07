@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { isAdminRequest } from "@/lib/admin/session";
 import ReportDocument from "@/lib/pdf/ReportDocument";
 import { renderPdf } from "@/lib/pdf/render";
-import { isValidEmail, sendPdfEmail } from "@/lib/email/resend";
+import { isValidEmail, sendPdfEmail, wrapEmailHtml } from "@/lib/email/resend";
 import type { ReportUnit } from "@/lib/admin/report";
 
 export async function POST(request: Request) {
@@ -27,7 +27,10 @@ export async function POST(request: Request) {
     await sendPdfEmail({
       to: email,
       subject: `Personal Assessment Report — ${units[0].title}`,
-      html: `<p>Attached is the report you generated: <strong>${units.map((u) => u.title).join(", ")}</strong>.</p>`,
+      html: wrapEmailHtml({
+        heading: "Personal Assessment Report",
+        bodyHtml: `<p>Attached is the report you generated: <strong>${units.map((u) => u.title).join(", ")}</strong>.</p>`,
+      }),
       pdfBuffer: buffer,
       filename: "personal-assessment-report.pdf",
     });
