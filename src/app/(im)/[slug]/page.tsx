@@ -25,8 +25,13 @@ export default async function HiddenImAdminPage({
   const authorized = await isAdminRequest("intentionalministries");
 
   return (
-    <div className="w-full max-w-3xl flex-1 bg-white px-6 py-8 sm:flex-none sm:rounded-2xl sm:py-10 sm:shadow-sm">
-      {authorized ? <ImAdminDashboard /> : <AdminGate loginEndpoint="/api/im-admin/login" />}
+    <div className="flex flex-1 flex-col bg-mist px-4 py-8 sm:px-6 sm:py-12">
+      <div className="im-card mx-auto w-full max-w-3xl overflow-hidden border border-gray bg-white">
+        <div className="h-1.5 bg-blue" aria-hidden />
+        <div className="px-6 py-8 sm:px-8 sm:py-10">
+          {authorized ? <ImAdminDashboard /> : <AdminGate loginEndpoint="/api/im-admin/login" />}
+        </div>
+      </div>
     </div>
   );
 }

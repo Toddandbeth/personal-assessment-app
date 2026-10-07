@@ -5,7 +5,20 @@
   --foreground: #171717;
 }
 
+/* Intentional Ministries brand colors (same names as the website). */
+@theme {
+  --color-navy: #253551;
+  --color-gray: #ccd0d6;
+  --color-blue: #7993c2;
+  --color-green: #7f8b69;
+  --color-tan: #ba9c81;
+  --color-ink: #1a2233;
+  --color-paper: #ffffff;
+  --color-mist: #f4f5f7;
+}
+
 @theme inline {
+  --font-display: var(--font-barlow-condensed);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
@@ -25,20 +38,82 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
-/* Intentional Ministries door: Barlow Condensed headlines, Barlow body. */
+/* Intentional Ministries door: matches the website (Barlow Condensed
+   headlines, Barlow body, square corners). */
 .im-root {
   color-scheme: light;
-  background: #f4f5f7;
-  color: #27272a;
+  background: #ffffff;
+  color: #1a2233;
   font-family: var(--font-barlow), Arial, Helvetica, sans-serif;
+  font-size: 18px;
+  line-height: 1.625;
+  -webkit-font-smoothing: antialiased;
+}
+@media (min-width: 640px) {
+  .im-root {
+    font-size: 19px;
+  }
 }
 .im-root :is(h1, h2, h3) {
-  font-family: var(--font-barlow-condensed), var(--font-barlow), Arial, sans-serif;
-  letter-spacing: 0.005em;
+  text-wrap: balance;
+}
+.im-root :is(p, li) {
+  text-wrap: pretty;
 }
 .im-root input,
 .im-root textarea,
 .im-root button,
 .im-root select {
   font-family: inherit;
+}
+
+/* Headlines: tall condensed caps, like the book covers */
+.im-root .display {
+  font-family: var(--font-barlow-condensed), var(--font-barlow), Arial, sans-serif;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  line-height: 0.95;
+}
+/* Small label above a headline */
+.im-root .eyebrow {
+  font-family: var(--font-barlow-condensed), var(--font-barlow), Arial, sans-serif;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  font-size: 0.875rem;
+  line-height: 1.4;
+}
+/* Two-color band, echoing the band across the top of each book cover */
+.im-root .cover-band {
+  height: 10px;
+  background: linear-gradient(to bottom, #253551 0 60%, #ccd0d6 60% 100%);
+}
+
+/* Screens after the front screen: same family as the website.
+   Headings become condensed caps, buttons square, corners squared. */
+.im-root .im-card :is(h1, h2, h3) {
+  font-family: var(--font-barlow-condensed), var(--font-barlow), Arial, sans-serif;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  line-height: 1;
+  color: #253551;
+}
+.im-root .im-card h1 {
+  font-size: 2.5rem;
+}
+.im-root .im-card h2 {
+  font-size: 1.75rem;
+}
+.im-root .im-card :is(.rounded-full, .rounded-lg, .rounded-xl, .rounded-2xl) {
+  border-radius: 0;
+}
+.im-root .im-card :is(button, a).rounded-full {
+  font-family: var(--font-barlow-condensed), var(--font-barlow), Arial, sans-serif;
+  font-weight: 600;
+  font-size: 1.1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  min-height: 3rem;
 }

@@ -12,9 +12,14 @@ export default async function IntentionalMinistriesAssessment({
   const track: EntryTrack = rawTrack === "returning" ? "returning" : "standalone";
 
   return (
-    <div className="w-full max-w-md flex-1 overflow-hidden bg-white px-6 py-8 sm:max-w-xl sm:flex-none sm:rounded-2xl sm:py-10 sm:shadow-sm lg:max-w-2xl">
-      {/* key={track} resets the flow when switching between Begin and Returning */}
-      <StartFlow key={track} track={track} door="intentionalministries" />
+    <div className="flex flex-1 flex-col bg-mist px-4 py-8 sm:px-6 sm:py-12 lg:py-16">
+      <div className="im-card mx-auto w-full max-w-md overflow-hidden border border-gray bg-white sm:max-w-xl lg:max-w-2xl">
+        <div className="h-1.5 bg-blue" aria-hidden />
+        <div className="px-6 py-8 sm:px-8 sm:py-10">
+          {/* key={track} resets the flow when switching between Begin and Returning */}
+          <StartFlow key={track} track={track} door="intentionalministries" />
+        </div>
+      </div>
     </div>
   );
 }
