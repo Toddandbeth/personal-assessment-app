@@ -15,14 +15,23 @@ const nextConfig: NextConfig = {
       { source: "/start", destination: "/fullcount/start", permanent: true },
       { source: "/admin", destination: "/fullcount/admin", permanent: true },
       { source: "/admin/:path*", destination: "/fullcount/admin/:path*", permanent: true },
-      // TEMPORARY until the Intentional Ministries front screen is built:
-      // keeps the live site root behaving as it does today. Removed then.
-      { source: "/", destination: "/fullcount", permanent: false },
     ];
   },
 
   async headers() {
+    // The hidden Intentional Ministries admin address lives only in an
+    // environment variable (never in this repo); keep it out of search
+    // engines with a header as well as the page's own noindex tag.
+    const imAdminPath = process.env.IM_ADMIN_PATH?.trim();
     return [
+      ...(imAdminPath
+        ? [
+            {
+              source: `/${imAdminPath}`,
+              headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }],
+            },
+          ]
+        : []),
       // The Full Count door is invisible to search engines.
       {
         source: "/fullcount/:path*",

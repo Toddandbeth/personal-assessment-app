@@ -11,7 +11,7 @@ function slugify(name: string): string {
 }
 
 export async function POST(request: Request) {
-  if (!(await isAdminRequest())) {
+  if (!(await isAdminRequest("fullcount"))) {
     return NextResponse.json({ error: "Not authorized." }, { status: 401 });
   }
 

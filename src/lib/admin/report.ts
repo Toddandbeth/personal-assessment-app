@@ -92,6 +92,7 @@ export async function computeReportUnit(
       .select("id, section, prompt, display_order")
       .eq("category_id", categoryId)
       .eq("is_goal", false)
+      .is("retired_at", null)
       .order("display_order"),
     supabase
       .from("da_submissions")

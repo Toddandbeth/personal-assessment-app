@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import ComparisonDocument from "@/lib/pdf/ComparisonDocument";
 import { renderPdf } from "@/lib/pdf/render";
 import { isValidEmail, sendPdfEmail, wrapEmailHtml } from "@/lib/email/resend";
+import { parseDoor } from "@/lib/doors";
 import type { ComparisonRow } from "@/lib/supabase/types";
 
 // Participant-facing, unauthenticated — same trust model as /api/report/pdf.
@@ -11,6 +12,7 @@ export async function POST(request: Request) {
   const firstName = typeof body?.firstName === "string" ? body.firstName : "";
   const email = typeof body?.email === "string" ? body.email.trim() : "";
   const baselineOnly = body?.baselineOnly === true;
+  const door = parseDoor(body?.door);
   const goalBaseline = typeof body?.goalBaseline === "string" ? body.goalBaseline : null;
   const goalRetake = typeof body?.goalRetake === "string" ? body.goalRetake : null;
 
@@ -28,11 +30,12 @@ export async function POST(request: Request) {
       to: email,
       subject: firstName ? `${firstName}'s Personal Assessment Results` : "Your Personal Assessment Results",
       html: wrapEmailHtml({
-        heading: "Your Personal Assessment Results",
+        heading: door === "intentionalministries" ? "Intentional Ministries" : "Your Personal Assessment Results",
         bodyHtml: `<p>${firstName ? `Hi ${firstName},` : "Hi,"}</p><p>Attached is your ${baselineOnly ? "" : "before-and-after "}personal assessment report.</p>`,
       }),
       pdfBuffer: buffer,
       filename: "personal-assessment-results.pdf",
+      door,
     });
     return NextResponse.json({ ok: true });
   } catch {

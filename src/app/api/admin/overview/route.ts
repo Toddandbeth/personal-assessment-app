@@ -3,7 +3,7 @@ import { isAdminRequest } from "@/lib/admin/session";
 import { createServiceClient } from "@/lib/supabase/serviceClient";
 
 export async function GET() {
-  if (!(await isAdminRequest())) {
+  if (!(await isAdminRequest("fullcount"))) {
     return NextResponse.json({ error: "Not authorized." }, { status: 401 });
   }
 
@@ -21,7 +21,8 @@ export async function GET() {
     supabase
       .from("da_participants")
       .select("category_id, created_at")
-      .eq("is_standalone", true),
+      .eq("is_standalone", true)
+      .eq("door", "fullcount"),
   ]);
 
   if (categoriesError || regionsError || groupsError || standaloneError) {

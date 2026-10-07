@@ -3,6 +3,7 @@
 import Link from "next/link";
 import DeliveryControls from "@/components/DeliveryControls";
 import { deltaColor, formatDelta } from "@/lib/reportVisuals";
+import { DOOR_FULLCOUNT, HOME_HREF, type Door } from "@/lib/doors";
 import type { ComparisonRow } from "@/lib/supabase/types";
 
 function ChangeCell({ before, after }: { before: number | null; after: number | null }) {
@@ -24,13 +25,16 @@ export default function ComparisonView({
   baselineOnly = false,
   goalBaseline = null,
   goalRetake = null,
+  door = DOOR_FULLCOUNT,
 }: {
   rows: ComparisonRow[];
   firstName?: string;
   baselineOnly?: boolean;
   goalBaseline?: string | null;
   goalRetake?: string | null;
+  door?: Door;
 }) {
+  const homeHref = HOME_HREF[door];
   const sections: { section: string; rows: ComparisonRow[] }[] = [];
   for (const row of rows) {
     const last = sections[sections.length - 1];
@@ -43,7 +47,7 @@ export default function ComparisonView({
 
   return (
     <div className="flex w-full flex-col gap-8">
-      <Link href="/fullcount" className="self-start text-sm font-medium text-[#7993c2] hover:text-[#253551]">
+      <Link href={homeHref} className="self-start text-sm font-medium text-[#7993c2] hover:text-[#253551]">
         ← Home
       </Link>
       <div className="text-center">
@@ -123,12 +127,12 @@ export default function ComparisonView({
       <DeliveryControls
         pdfEndpoint="/api/report/pdf"
         emailEndpoint="/api/report/email"
-        payload={{ rows, firstName, baselineOnly, goalBaseline, goalRetake }}
+        payload={{ rows, firstName, baselineOnly, goalBaseline, goalRetake, door }}
         downloadFilename="personal-assessment-results.pdf"
       />
 
       <Link
-        href="/fullcount"
+        href={homeHref}
         className="rounded-full px-5 py-2.5 text-center text-sm font-medium text-white hover:opacity-90"
         style={{ backgroundColor: "#7993c2" }}
       >

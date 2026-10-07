@@ -24,3 +24,21 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* Intentional Ministries door: Barlow Condensed headlines, Barlow body. */
+.im-root {
+  color-scheme: light;
+  background: #f4f5f7;
+  color: #27272a;
+  font-family: var(--font-barlow), Arial, Helvetica, sans-serif;
+}
+.im-root :is(h1, h2, h3) {
+  font-family: var(--font-barlow-condensed), var(--font-barlow), Arial, sans-serif;
+  letter-spacing: 0.005em;
+}
+.im-root input,
+.im-root textarea,
+.im-root button,
+.im-root select {
+  font-family: inherit;
+}

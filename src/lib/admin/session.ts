@@ -1,22 +1,29 @@
 import "server-only";
 import { createHmac, timingSafeEqual } from "crypto";
 import { cookies } from "next/headers";
+import type { Door } from "@/lib/doors";
 
-export const ADMIN_SESSION_COOKIE = "da_admin_session";
 const SESSION_MAX_AGE_SECONDS = 12 * 60 * 60; // 12 hours
 
-function sign(expiresAt: number): string {
+// Each door has its own cookie AND its own signature scope: the door name is
+// part of what's signed, so a Full Count session can never validate as an
+// Intentional Ministries session (even if someone copies the cookie value
+// across and renames it).
+export function sessionCookieName(door: Door): string {
+  return door === "fullcount" ? "da_admin_session_fc" : "da_admin_session_im";
+}
+
+function sign(door: Door, expiresAt: number): string {
   const secret = process.env.ADMIN_SESSION_SECRET!;
-  return createHmac("sha256", secret).update(String(expiresAt)).digest("hex");
+  return createHmac("sha256", secret).update(`${door}.${expiresAt}`).digest("hex");
 }
 
-export function createSessionCookieValue(): { value: string; maxAge: number } {
+export function createSessionCookieValue(door: Door): { value: string; maxAge: number } {
   const expiresAt = Date.now() + SESSION_MAX_AGE_SECONDS * 1000;
-  const signature = sign(expiresAt);
-  return { value: `${expiresAt}.${signature}`, maxAge: SESSION_MAX_AGE_SECONDS };
+  return { value: `${expiresAt}.${sign(door, expiresAt)}`, maxAge: SESSION_MAX_AGE_SECONDS };
 }
 
-export function isValidSession(cookieValue: string | undefined): boolean {
+export function isValidSession(door: Door, cookieValue: string | undefined): boolean {
   if (!cookieValue) return false;
   const [expiresAtRaw, signature] = cookieValue.split(".");
   if (!expiresAtRaw || !signature) return false;
@@ -24,21 +31,40 @@ export function isValidSession(cookieValue: string | undefined): boolean {
   const expiresAt = Number(expiresAtRaw);
   if (!Number.isFinite(expiresAt) || expiresAt < Date.now()) return false;
 
-  const expected = sign(expiresAt);
+  const expected = sign(door, expiresAt);
   const a = Buffer.from(signature, "hex");
   const b = Buffer.from(expected, "hex");
   if (a.length !== b.length) return false;
   return timingSafeEqual(a, b);
 }
 
-export function checkAdminCode(code: string): boolean {
-  return code.trim().toLowerCase() === process.env.ADMIN_ACCESS_CODE!.trim().toLowerCase();
+// The admin codes live only in server environment variables (never
+// NEXT_PUBLIC_*), and are compared here on the server only. Case-insensitive.
+// Full Count falls back to the original ADMIN_ACCESS_CODE until its own
+// variable is set; Intentional Ministries has NO fallback, so it can never be
+// opened by the Full Count code by accident.
+function expectedCode(door: Door): string | null {
+  const raw =
+    door === "fullcount"
+      ? process.env.ADMIN_ACCESS_CODE_FULLCOUNT ?? process.env.ADMIN_ACCESS_CODE
+      : process.env.ADMIN_ACCESS_CODE_INTENTIONALMINISTRIES;
+  const code = raw?.trim().toLowerCase();
+  return code ? code : null;
 }
 
-// Convenience for Route Handlers: every admin mutation/read route calls
-// this itself rather than trusting that the page-level check already ran,
-// since Route Handlers are independently reachable over the network.
-export async function isAdminRequest(): Promise<boolean> {
+export function checkAdminCode(door: Door, code: string): boolean {
+  const expected = expectedCode(door);
+  if (!expected) return false;
+  const given = code.trim().toLowerCase();
+  const a = Buffer.from(given);
+  const b = Buffer.from(expected);
+  return a.length === b.length && timingSafeEqual(a, b);
+}
+
+// Convenience for Route Handlers and pages: every admin read/mutation calls
+// this itself rather than trusting a page-level check, since Route Handlers
+// are independently reachable over the network.
+export async function isAdminRequest(door: Door): Promise<boolean> {
   const cookieStore = await cookies();
-  return isValidSession(cookieStore.get(ADMIN_SESSION_COOKIE)?.value);
+  return isValidSession(door, cookieStore.get(sessionCookieName(door))?.value);
 }

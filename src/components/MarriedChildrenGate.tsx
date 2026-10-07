@@ -43,10 +43,13 @@ function YesNoToggle({
 }
 
 export default function MarriedChildrenGate({
+  plain = false,
   submitting,
   errorMessage,
   onSubmit,
 }: {
+  // plain = no navy frame (Intentional Ministries already sits in a card).
+  plain?: boolean;
   submitting: boolean;
   errorMessage?: string | null;
   onSubmit: (isMarried: boolean, hasChildren: boolean) => void;
@@ -57,8 +60,8 @@ export default function MarriedChildrenGate({
   const canSubmit = isMarried !== null && hasChildren !== null;
 
   return (
-    <div className="w-full rounded-2xl bg-[#253551] p-2.5 shadow-sm">
-      <div className="flex w-full flex-col gap-6 rounded-xl bg-white p-6">
+    <div className={plain ? "w-full" : "w-full rounded-2xl bg-[#253551] p-2.5 shadow-sm"}>
+      <div className={`flex w-full flex-col gap-6 ${plain ? "" : "rounded-xl bg-white p-6"}`}>
         <h1 className="text-2xl font-bold text-[#253551]">
           A couple of questions before we begin.
         </h1>

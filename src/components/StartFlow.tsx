@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import EntryForm, { type EntryFormValues } from "@/components/EntryForm";
 import ReturningEntryForm, { type ReturningEntryValues } from "@/components/ReturningEntryForm";
+import ImEntryForm, { type ImEntryValues } from "@/components/ImEntryForm";
 import ReturningPicker from "@/components/ReturningPicker";
 import ReturningBaselinePrompt from "@/components/ReturningBaselinePrompt";
 import ReturningNotFound from "@/components/ReturningNotFound";
@@ -16,6 +17,7 @@ import QuestionForm from "@/components/QuestionForm";
 import ComparisonView from "@/components/ComparisonView";
 import { archiveAndRestart, checkIdentity, findReturning, type IdentityArgs } from "@/lib/identity";
 import { getComparison, startSubmission } from "@/lib/assessment";
+import { DOOR_FULLCOUNT, DOOR_IM, HOME_HREF, type Door } from "@/lib/doors";
 import type {
   ComparisonRow,
   EntryTrack,
@@ -39,8 +41,24 @@ type Phase =
   | "returning_baseline_prompt"
   | "returning_not_found";
 
-export default function StartFlow({ track }: { track: EntryTrack }) {
+function friendlyError(err: unknown, fallback: string): string {
+  const message = (err as { message?: string } | null)?.message ?? "";
+  if (message.includes("too_many_attempts")) {
+    return "Too many attempts. Please wait about 15 minutes and try again.";
+  }
+  return fallback;
+}
+
+export default function StartFlow({
+  track,
+  door = DOOR_FULLCOUNT,
+}: {
+  track: EntryTrack;
+  door?: Door;
+}) {
   const router = useRouter();
+  const isIm = door === DOOR_IM;
+  const homeHref = HOME_HREF[door];
   const [phase, setPhase] = useState<Phase>("entry");
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -61,16 +79,35 @@ export default function StartFlow({ track }: { track: EntryTrack }) {
   const [returningIdentity, setReturningIdentity] = useState<ReturningEntryValues | null>(null);
   const [returningCandidates, setReturningCandidates] = useState<ReturningCandidate[]>([]);
 
-  async function handleSubmit(values: EntryFormValues) {
-    const args: IdentityArgs = {
+  function handleSubmit(values: EntryFormValues) {
+    return runIdentity({
       track: track as "group" | "standalone",
       region: track === "group" ? values.region : null,
       groupNumber: track === "group" ? values.groupNumber : null,
       standaloneCategory: track === "standalone" ? values.standaloneCategory : null,
       firstName: values.firstName,
       lastFour: values.lastFour,
-    };
+      door: DOOR_FULLCOUNT,
+      pin: null,
+    });
+  }
 
+  // Intentional Ministries: always the individual path, always the shared
+  // adult question list; identity is name + last four + PIN.
+  function handleImSubmit(values: ImEntryValues) {
+    return runIdentity({
+      track: "standalone",
+      region: null,
+      groupNumber: null,
+      standaloneCategory: "men",
+      firstName: values.firstName,
+      lastFour: values.lastFour,
+      door: DOOR_IM,
+      pin: values.pin,
+    });
+  }
+
+  async function runIdentity(args: IdentityArgs) {
     setSubmitting(true);
     setErrorMessage(null);
     try {
@@ -99,14 +136,30 @@ export default function StartFlow({ track }: { track: EntryTrack }) {
           setPhase("completed_pair");
           break;
       }
-    } catch {
-      setErrorMessage("Something went wrong. Please try again.");
+    } catch (err) {
+      setErrorMessage(friendlyError(err, "Something went wrong. Please try again."));
     } finally {
       setSubmitting(false);
     }
   }
 
   async function handleReturningSubmit(values: ReturningEntryValues) {
+    if (isIm) {
+      // No lookup step on this door: name + last four + PIN go straight to
+      // the identity check, and a miss looks identical whether or not any
+      // such person exists.
+      await resolveReturning({
+        track: "standalone",
+        region: null,
+        groupNumber: null,
+        standaloneCategory: "men",
+        firstName: values.firstName,
+        lastFour: values.lastFour,
+        door: DOOR_IM,
+        pin: values.pin ?? null,
+      });
+      return;
+    }
     setReturningIdentity(values);
     setSubmitting(true);
     setErrorMessage(null);
@@ -120,25 +173,27 @@ export default function StartFlow({ track }: { track: EntryTrack }) {
         setReturningCandidates(result.candidates);
         setPhase("returning_picker");
       }
-    } catch {
-      setErrorMessage("Something went wrong. Please try again.");
+    } catch (err) {
+      setErrorMessage(friendlyError(err, "Something went wrong. Please try again."));
     } finally {
       setSubmitting(false);
     }
   }
 
-  async function resolveReturningCandidate(
-    candidate: ReturningCandidate,
-    identity: ReturningEntryValues
-  ) {
-    const args: IdentityArgs = {
+  function resolveReturningCandidate(candidate: ReturningCandidate, identity: ReturningEntryValues) {
+    return resolveReturning({
       track: candidate.track,
       region: candidate.region,
       groupNumber: candidate.group_number,
       standaloneCategory: candidate.standalone_category,
       firstName: identity.firstName,
       lastFour: identity.lastFour,
-    };
+      door: DOOR_FULLCOUNT,
+      pin: null,
+    });
+  }
+
+  async function resolveReturning(args: IdentityArgs) {
     setSubmitting(true);
     setErrorMessage(null);
     try {
@@ -160,8 +215,8 @@ export default function StartFlow({ track }: { track: EntryTrack }) {
         // nothing to return to, so this is treated the same as no match.
         setPhase("returning_not_found");
       }
-    } catch {
-      setErrorMessage("Something went wrong. Please try again.");
+    } catch (err) {
+      setErrorMessage(friendlyError(err, "Something went wrong. Please try again."));
     } finally {
       setSubmitting(false);
     }
@@ -193,8 +248,8 @@ export default function StartFlow({ track }: { track: EntryTrack }) {
       setIsMarried(result.is_married);
       setHasChildren(result.has_children);
       setPhase("questions");
-    } catch {
-      setErrorMessage("Something went wrong starting your assessment. Please try again.");
+    } catch (err) {
+      setErrorMessage(friendlyError(err, "Something went wrong starting your assessment. Please try again."));
     } finally {
       setSubmitting(false);
     }
@@ -210,8 +265,8 @@ export default function StartFlow({ track }: { track: EntryTrack }) {
       setIsMarried(result.is_married);
       setHasChildren(result.has_children);
       setPhase("questions");
-    } catch {
-      setErrorMessage("Something went wrong starting your assessment. Please try again.");
+    } catch (err) {
+      setErrorMessage(friendlyError(err, "Something went wrong starting your assessment. Please try again."));
     } finally {
       setFlagsSubmitting(false);
     }
@@ -226,8 +281,8 @@ export default function StartFlow({ track }: { track: EntryTrack }) {
       setGoalBaseline(result.goal_baseline ?? null);
       setGoalRetake(result.goal_retake ?? null);
       setPhase(targetPhase);
-    } catch {
-      setErrorMessage("Something went wrong loading your results. Please try again.");
+    } catch (err) {
+      setErrorMessage(friendlyError(err, "Something went wrong loading your results. Please try again."));
       setPhase("results_error");
     } finally {
       setComparisonLoading(false);
@@ -263,7 +318,7 @@ export default function StartFlow({ track }: { track: EntryTrack }) {
         goalText={goalText}
         onViewAnswers={() => setPhase("view_answers_placeholder")}
         onContinue={() => beginSubmission("retake")}
-        onBackOut={() => router.push("/fullcount")}
+        onBackOut={() => router.push(homeHref)}
       />
     );
   }
@@ -271,6 +326,7 @@ export default function StartFlow({ track }: { track: EntryTrack }) {
   if (phase === "view_answers_placeholder") {
     return (
       <ComingSoonPlaceholder
+        homeHref={homeHref}
         heading="Your original answers"
         message="Viewing your original baseline answers isn't built yet."
         note="Say the word and we'll add it."
@@ -287,7 +343,7 @@ export default function StartFlow({ track }: { track: EntryTrack }) {
           await archiveAndRestart(lastArgs);
           setPhase("begin");
         }}
-        onReturnHome={() => router.push("/fullcount")}
+        onReturnHome={() => router.push(homeHref)}
       />
     );
   }
@@ -295,6 +351,7 @@ export default function StartFlow({ track }: { track: EntryTrack }) {
   if (phase === "flags") {
     return (
       <MarriedChildrenGate
+        plain={isIm}
         submitting={flagsSubmitting}
         errorMessage={errorMessage}
         onSubmit={handleFlagsSubmit}
@@ -321,6 +378,7 @@ export default function StartFlow({ track }: { track: EntryTrack }) {
         firstName={lastArgs?.firstName ?? ""}
         goalBaseline={goalBaseline}
         goalRetake={goalRetake}
+        door={door}
         baselineOnly
       />
     );
@@ -333,6 +391,7 @@ export default function StartFlow({ track }: { track: EntryTrack }) {
         firstName={lastArgs?.firstName ?? ""}
         goalBaseline={goalBaseline}
         goalRetake={goalRetake}
+        door={door}
       />
     );
   }
@@ -347,7 +406,7 @@ export default function StartFlow({ track }: { track: EntryTrack }) {
         </p>
         {errorMessage && <p className="text-sm text-red-600">{errorMessage}</p>}
         <Link
-          href="/fullcount"
+          href={homeHref}
           className="mt-2 rounded-full border border-[#ccd0d6] px-5 py-2 text-sm font-medium text-[#253551] hover:bg-[#ccd0d6]/40"
         >
           Return to home screen
@@ -361,7 +420,7 @@ export default function StartFlow({ track }: { track: EntryTrack }) {
       <ReturningPicker
         candidates={returningCandidates}
         onPick={(c) => returningIdentity && resolveReturningCandidate(c, returningIdentity)}
-        onBackOut={() => router.push("/fullcount")}
+        onBackOut={() => router.push(homeHref)}
       />
     );
   }
@@ -373,13 +432,21 @@ export default function StartFlow({ track }: { track: EntryTrack }) {
         errorMessage={errorMessage}
         onSeeResults={() => loadResults("baseline_results")}
         onCompleteAssessment={() => beginSubmission("retake")}
-        onReturnHome={() => router.push("/fullcount")}
+        onReturnHome={() => router.push(homeHref)}
       />
     );
   }
 
   if (phase === "returning_not_found") {
-    return <ReturningNotFound />;
+    return (
+      <ReturningNotFound
+        door={door}
+        onRetry={() => {
+          setErrorMessage(null);
+          setPhase("entry");
+        }}
+      />
+    );
   }
 
   if (comparisonLoading) {
@@ -389,9 +456,20 @@ export default function StartFlow({ track }: { track: EntryTrack }) {
   if (track === "returning") {
     return (
       <ReturningEntryForm
+        requirePin={isIm}
         submitting={submitting}
         errorMessage={errorMessage}
         onSubmit={handleReturningSubmit}
+      />
+    );
+  }
+
+  if (isIm) {
+    return (
+      <ImEntryForm
+        submitting={submitting}
+        errorMessage={errorMessage}
+        onSubmit={handleImSubmit}
       />
     );
   }

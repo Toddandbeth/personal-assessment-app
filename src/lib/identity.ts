@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/client";
+import type { Door } from "@/lib/doors";
 import {
   RPC,
   type FindReturningResult,
@@ -14,6 +15,11 @@ export interface IdentityArgs {
   standaloneCategory: StandaloneCategory | null;
   firstName: string;
   lastFour: string;
+  // Which front door this person came through. The Intentional Ministries
+  // door also carries the person's 4-digit PIN (kept in memory only; it goes
+  // to the database function and nowhere else — never into a URL, PDF or email).
+  door: Door;
+  pin: string | null;
 }
 
 export function toRpcArgs(args: IdentityArgs) {
@@ -24,6 +30,8 @@ export function toRpcArgs(args: IdentityArgs) {
     p_standalone_category: args.standaloneCategory,
     p_first_name: args.firstName,
     p_last_four: args.lastFour,
+    p_door: args.door,
+    p_pin: args.pin,
   };
 }
 

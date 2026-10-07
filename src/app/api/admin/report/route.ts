@@ -4,7 +4,7 @@ import { createServiceClient } from "@/lib/supabase/serviceClient";
 import { computeReportUnit, fetchGoalsForParticipants, type ReportUnit } from "@/lib/admin/report";
 
 export async function GET(request: Request) {
-  if (!(await isAdminRequest())) {
+  if (!(await isAdminRequest("fullcount"))) {
     return NextResponse.json({ error: "Not authorized." }, { status: 401 });
   }
 
@@ -251,7 +251,8 @@ export async function GET(request: Request) {
         .from("da_participants")
         .select("id, created_at")
         .eq("category_id", category.id)
-        .eq("is_standalone", true);
+        .eq("is_standalone", true)
+        .eq("door", "fullcount");
 
       const participantIds = (standalone ?? [])
         .filter((p) => new Date(p.created_at).getFullYear() === year)

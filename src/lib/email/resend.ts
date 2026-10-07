@@ -4,7 +4,10 @@ const RESEND_API_URL = "https://api.resend.com/emails";
 // Reuses the ministry's already-verified subdomain — see the sibling
 // Accountability app's src/lib/welcomeEmail.ts, which notes the bare root
 // domain bounces and only mail.intentionalministries.com is verified.
+// Same verified mail domain for both doors; only the display name differs.
+// Intentional Ministries mail never mentions Full Count.
 const FROM_ADDRESS = "Personal Assessment <results@mail.intentionalministries.com>";
+const FROM_ADDRESS_IM = "Intentional Ministries <results@mail.intentionalministries.com>";
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -40,6 +43,7 @@ export interface SendPdfEmailParams {
   html: string;
   pdfBuffer: Buffer;
   filename: string;
+  door?: "fullcount" | "intentionalministries";
 }
 
 // Unlike the sibling app's fire-and-forget welcome email, this is a
@@ -58,7 +62,7 @@ export async function sendPdfEmail(params: SendPdfEmailParams): Promise<void> {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      from: FROM_ADDRESS,
+      from: params.door === "intentionalministries" ? FROM_ADDRESS_IM : FROM_ADDRESS,
       to: [params.to],
       subject: params.subject,
       html: params.html,

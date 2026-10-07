@@ -7,7 +7,7 @@ const MAX_BATCH = 200;
 // Lists the individual groups under a region — used to render the
 // expandable group rows under a Region.
 export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
-  if (!(await isAdminRequest())) {
+  if (!(await isAdminRequest("fullcount"))) {
     return NextResponse.json({ error: "Not authorized." }, { status: 401 });
   }
 
@@ -32,7 +32,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
 // existing da_groups row — that guarantee is what this whole route exists
 // to protect (spec Section 3).
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
-  if (!(await isAdminRequest())) {
+  if (!(await isAdminRequest("fullcount"))) {
     return NextResponse.json({ error: "Not authorized." }, { status: 401 });
   }
 

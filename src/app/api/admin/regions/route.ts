@@ -5,7 +5,7 @@ import { createServiceClient } from "@/lib/supabase/serviceClient";
 const MAX_BATCH = 200;
 
 export async function POST(request: Request) {
-  if (!(await isAdminRequest())) {
+  if (!(await isAdminRequest("fullcount"))) {
     return NextResponse.json({ error: "Not authorized." }, { status: 401 });
   }
 

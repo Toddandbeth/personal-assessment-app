@@ -1,15 +1,19 @@
 import { NextResponse } from "next/server";
 import { isAdminRequest } from "@/lib/admin/session";
+import { parseDoor } from "@/lib/doors";
 import ReportDocument from "@/lib/pdf/ReportDocument";
 import { renderPdf } from "@/lib/pdf/render";
 import type { ReportUnit } from "@/lib/admin/report";
 
 export async function POST(request: Request) {
-  if (!(await isAdminRequest())) {
+  const body = await request.json().catch(() => null);
+  // The caller names its door; that door's own admin login must be valid.
+  // (A Full Count login never authorizes an Intentional Ministries request,
+  // or the reverse.)
+  if (!(await isAdminRequest(parseDoor(body?.door)))) {
     return NextResponse.json({ error: "Not authorized." }, { status: 401 });
   }
 
-  const body = await request.json().catch(() => null);
   const units = body?.units as ReportUnit[] | undefined;
 
   if (!Array.isArray(units) || units.length === 0) {

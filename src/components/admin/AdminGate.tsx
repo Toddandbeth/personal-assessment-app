@@ -3,7 +3,11 @@
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 
-export default function AdminGate() {
+export default function AdminGate({
+  loginEndpoint = "/api/admin/login",
+}: {
+  loginEndpoint?: string;
+}) {
   const router = useRouter();
   const [code, setCode] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -15,13 +19,17 @@ export default function AdminGate() {
     setSubmitting(true);
     setError(null);
     try {
-      const res = await fetch("/api/admin/login", {
+      const res = await fetch(loginEndpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ code }),
       });
       if (!res.ok) {
-        setError("Incorrect code. Please try again.");
+        setError(
+          res.status === 429
+            ? "Too many attempts. Please wait a while and try again."
+            : "Incorrect code. Please try again."
+        );
         return;
       }
       router.refresh();
