@@ -43,7 +43,7 @@ export default function AdminDashboard() {
 
   async function handleLogout() {
     await fetch("/api/admin/logout", { method: "POST" });
-    router.push("/");
+    router.push("/fullcount");
   }
 
   return (

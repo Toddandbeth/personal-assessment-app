@@ -263,7 +263,7 @@ export default function StartFlow({ track }: { track: EntryTrack }) {
         goalText={goalText}
         onViewAnswers={() => setPhase("view_answers_placeholder")}
         onContinue={() => beginSubmission("retake")}
-        onBackOut={() => router.push("/")}
+        onBackOut={() => router.push("/fullcount")}
       />
     );
   }
@@ -287,7 +287,7 @@ export default function StartFlow({ track }: { track: EntryTrack }) {
           await archiveAndRestart(lastArgs);
           setPhase("begin");
         }}
-        onReturnHome={() => router.push("/")}
+        onReturnHome={() => router.push("/fullcount")}
       />
     );
   }
@@ -347,7 +347,7 @@ export default function StartFlow({ track }: { track: EntryTrack }) {
         </p>
         {errorMessage && <p className="text-sm text-red-600">{errorMessage}</p>}
         <Link
-          href="/"
+          href="/fullcount"
           className="mt-2 rounded-full border border-[#ccd0d6] px-5 py-2 text-sm font-medium text-[#253551] hover:bg-[#ccd0d6]/40"
         >
           Return to home screen
@@ -361,7 +361,7 @@ export default function StartFlow({ track }: { track: EntryTrack }) {
       <ReturningPicker
         candidates={returningCandidates}
         onPick={(c) => returningIdentity && resolveReturningCandidate(c, returningIdentity)}
-        onBackOut={() => router.push("/")}
+        onBackOut={() => router.push("/fullcount")}
       />
     );
   }
@@ -373,7 +373,7 @@ export default function StartFlow({ track }: { track: EntryTrack }) {
         errorMessage={errorMessage}
         onSeeResults={() => loadResults("baseline_results")}
         onCompleteAssessment={() => beginSubmission("retake")}
-        onReturnHome={() => router.push("/")}
+        onReturnHome={() => router.push("/fullcount")}
       />
     );
   }

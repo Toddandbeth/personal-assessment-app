@@ -8,7 +8,7 @@ export default async function RegionReportPage({
   params: Promise<{ id: string }>;
 }) {
   if (!(await isAdminRequest())) {
-    redirect("/admin");
+    redirect("/fullcount/admin");
   }
 
   const { id } = await params;

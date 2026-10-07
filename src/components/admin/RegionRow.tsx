@@ -11,7 +11,7 @@ export default function RegionRow({
   return (
     <div className="flex flex-wrap items-center justify-between gap-2 border-t border-[#ccd0d6] pt-2">
       <Link
-        href={`/admin/report/region/${region.id}`}
+        href={`/fullcount/admin/report/region/${region.id}`}
         className="text-sm font-medium text-[#253551] hover:underline"
       >
         {region.name}

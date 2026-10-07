@@ -10,7 +10,7 @@ export default function GeneralYearRow({
   return (
     <div className="border-t border-[#ccd0d6] pt-2">
       <Link
-        href={`/admin/report/general/${categoryId}/${year}`}
+        href={`/fullcount/admin/report/general/${categoryId}/${year}`}
         className="text-sm font-medium text-[#253551] hover:underline"
       >
         General {year}

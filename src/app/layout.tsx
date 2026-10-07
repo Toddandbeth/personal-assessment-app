@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Personal Assessment",
-  description: "Full Count Ministries personal self-assessment",
+  description: "A personal self-assessment.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

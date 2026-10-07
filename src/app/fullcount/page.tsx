@@ -25,26 +25,26 @@ export default function Home() {
 
         <div className="flex w-full flex-col gap-3">
           <Link
-            href="/start?track=group"
+            href="/fullcount/start?track=group"
             className="rounded-full bg-[#253551] px-6 py-4 text-base font-semibold text-white hover:bg-[#1a2740]"
           >
             I&apos;m in a group
           </Link>
           <Link
-            href="/start?track=standalone"
+            href="/fullcount/start?track=standalone"
             className="rounded-full border border-[#ccd0d6] px-6 py-4 text-base font-semibold text-[#253551] hover:bg-white"
           >
             I&apos;m on my own
           </Link>
           <Link
-            href="/start?track=returning"
+            href="/fullcount/start?track=returning"
             className="rounded-full border border-[#ccd0d6] px-6 py-4 text-base font-semibold text-[#253551] hover:bg-white"
           >
             I&apos;m returning
           </Link>
         </div>
 
-        <Link href="/admin" className="text-xs text-[#7993c2] hover:text-[#253551]">
+        <Link href="/fullcount/admin" className="text-xs text-[#7993c2] hover:text-[#253551]">
           Admin access
         </Link>
         <p className="text-[10px] text-zinc-400">Version {process.env.NEXT_PUBLIC_BUILD_ID}</p>

@@ -165,7 +165,7 @@ export default function RegionReportView({ regionId }: { regionId: string }) {
 
   return (
     <div className="flex flex-col gap-6">
-      <Link href="/admin" className="text-sm font-medium text-[#7993c2] hover:text-[#253551]">
+      <Link href="/fullcount/admin" className="text-sm font-medium text-[#7993c2] hover:text-[#253551]">
         ← Back to Admin
       </Link>
 

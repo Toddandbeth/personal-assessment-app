@@ -32,7 +32,7 @@ export default function CategoryReportBlock({
   return (
     <div className="rounded-lg border border-[#ccd0d6] bg-[#ccd0d6]/20 p-4">
       <Link
-        href={`/admin/report/category/${category.id}`}
+        href={`/fullcount/admin/report/category/${category.id}`}
         className="flex items-center gap-2 text-base font-semibold text-[#253551] hover:underline"
       >
         {category.name}

@@ -8,7 +8,7 @@ export default async function GeneralReportPage({
   params: Promise<{ categoryId: string; year: string }>;
 }) {
   if (!(await isAdminRequest())) {
-    redirect("/admin");
+    redirect("/fullcount/admin");
   }
 
   const { categoryId, year } = await params;

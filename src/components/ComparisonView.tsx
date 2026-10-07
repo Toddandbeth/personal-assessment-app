@@ -43,7 +43,7 @@ export default function ComparisonView({
 
   return (
     <div className="flex w-full flex-col gap-8">
-      <Link href="/" className="self-start text-sm font-medium text-[#7993c2] hover:text-[#253551]">
+      <Link href="/fullcount" className="self-start text-sm font-medium text-[#7993c2] hover:text-[#253551]">
         ← Home
       </Link>
       <div className="text-center">
@@ -128,7 +128,7 @@ export default function ComparisonView({
       />
 
       <Link
-        href="/"
+        href="/fullcount"
         className="rounded-full px-5 py-2.5 text-center text-sm font-medium text-white hover:opacity-90"
         style={{ backgroundColor: "#7993c2" }}
       >

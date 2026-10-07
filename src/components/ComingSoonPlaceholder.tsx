@@ -15,7 +15,7 @@ export default function ComingSoonPlaceholder({
       <p className="max-w-sm text-zinc-600">{message}</p>
       <p className="text-sm text-zinc-500">{note}</p>
       <Link
-        href="/"
+        href="/fullcount"
         className="mt-2 rounded-full border border-[#ccd0d6] px-5 py-2 text-sm font-medium text-[#253551] hover:bg-[#ccd0d6]/40"
       >
         Return to home screen

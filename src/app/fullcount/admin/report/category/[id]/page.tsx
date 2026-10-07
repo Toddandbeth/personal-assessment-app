@@ -8,7 +8,7 @@ export default async function CategoryReportPage({
   params: Promise<{ id: string }>;
 }) {
   if (!(await isAdminRequest())) {
-    redirect("/admin");
+    redirect("/fullcount/admin");
   }
 
   const { id } = await params;
