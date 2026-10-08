@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import EntryForm, { type EntryFormValues } from "@/components/EntryForm";
@@ -15,6 +15,7 @@ import ComingSoonPlaceholder from "@/components/ComingSoonPlaceholder";
 import MarriedChildrenGate from "@/components/MarriedChildrenGate";
 import QuestionForm from "@/components/QuestionForm";
 import ComparisonView from "@/components/ComparisonView";
+import { useNoPullToRefresh } from "@/components/AssessmentGuards";
 import { archiveAndRestart, checkIdentity, findReturning, type IdentityArgs } from "@/lib/identity";
 import { getComparison, startSubmission } from "@/lib/assessment";
 import { DOOR_FULLCOUNT, DOOR_IM, HOME_HREF, type Door } from "@/lib/doors";
@@ -78,6 +79,14 @@ export default function StartFlow({
 
   const [returningIdentity, setReturningIdentity] = useState<ReturningEntryValues | null>(null);
   const [returningCandidates, setReturningCandidates] = useState<ReturningCandidate[]>([]);
+
+  useNoPullToRefresh();
+
+  // Every time the screen changes (submit, continue, back, results), start
+  // the new screen at the top instead of wherever the last one was scrolled.
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [phase, comparisonLoading]);
 
   function handleSubmit(values: EntryFormValues) {
     return runIdentity({

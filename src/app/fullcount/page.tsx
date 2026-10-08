@@ -1,19 +1,32 @@
+import Image from "next/image";
 import Link from "next/link";
+import texture from "@/assets/im/discipleship-blue.jpg";
+
+// Same family as the Intentional Ministries front screen: navy and blue,
+// condensed headline, square buttons. Mobile-only layout, as always.
+const display = "font-[family-name:var(--font-barlow-condensed)] uppercase";
 
 export default function Home() {
   return (
-    <div className="flex flex-1 flex-col items-center justify-center bg-zinc-50 px-6 py-16">
-      <div className="flex w-full max-w-sm flex-col items-center gap-8 text-center">
-        <h1 className="flex flex-col items-center">
-          <span className="text-4xl font-extrabold leading-tight text-[#253551] sm:text-5xl">
-            Personal Assessment
-          </span>
-          <span className="mt-1 text-lg font-semibold text-[#253551]/70">
-            Full Count
-          </span>
-        </h1>
+    <div className="flex flex-1 flex-col bg-white font-[family-name:var(--font-barlow)] text-[#1a2233]">
+      <div className="h-[10px] bg-[linear-gradient(to_bottom,#253551_0_60%,#ccd0d6_60%_100%)]" aria-hidden />
 
-        <p className="text-sm leading-6 text-zinc-600">
+      <section className="relative isolate overflow-hidden bg-[#253551] text-white">
+        <Image src={texture} alt="" fill priority sizes="100vw" className="-z-10 object-cover" />
+        <div className="mx-auto w-full max-w-sm px-6 py-12">
+          <h1 className="flex flex-col [text-shadow:0_2px_18px_rgba(0,0,0,0.3)]">
+            <span className={`${display} text-[3.4rem] font-semibold leading-[0.95] tracking-[0.02em]`}>
+              Personal Assessment
+            </span>
+            <span className={`${display} mt-4 text-xl font-medium tracking-[0.18em] text-[#7993c2]`}>
+              Full Count
+            </span>
+          </h1>
+        </div>
+      </section>
+
+      <div className="mx-auto flex w-full max-w-sm flex-1 flex-col gap-9 px-6 py-10">
+        <p className="text-lg leading-8">
           A short self-evaluation to help you see where you&apos;re growing over
           the course of your group. You&apos;ll answer a series of questions once
           at the start of your group, and again at the end, to see your own
@@ -23,31 +36,33 @@ export default function Home() {
           phone number, so you can find your results again later.
         </p>
 
-        <div className="flex w-full flex-col gap-3">
+        <div className="flex w-full flex-col gap-4">
           <Link
             href="/fullcount/start?track=group"
-            className="rounded-full bg-[#253551] px-6 py-4 text-base font-semibold text-white hover:bg-[#1a2740]"
+            className={`${display} flex min-h-16 items-center justify-center bg-[#253551] px-6 text-xl font-semibold tracking-[0.1em] text-white hover:bg-[#1a2233]`}
           >
             I&apos;m in a group
           </Link>
           <Link
             href="/fullcount/start?track=standalone"
-            className="rounded-full border border-[#ccd0d6] px-6 py-4 text-base font-semibold text-[#253551] hover:bg-white"
+            className={`${display} flex min-h-16 items-center justify-center border-2 border-[#253551] px-6 text-xl font-semibold tracking-[0.1em] text-[#253551] hover:bg-[#253551] hover:text-white`}
           >
             I&apos;m on my own
           </Link>
           <Link
             href="/fullcount/start?track=returning"
-            className="rounded-full border border-[#ccd0d6] px-6 py-4 text-base font-semibold text-[#253551] hover:bg-white"
+            className={`${display} flex min-h-16 items-center justify-center border-2 border-[#253551] px-6 text-xl font-semibold tracking-[0.1em] text-[#253551] hover:bg-[#253551] hover:text-white`}
           >
             I&apos;m returning
           </Link>
         </div>
 
-        <Link href="/fullcount/admin" className="text-xs text-[#7993c2] hover:text-[#253551]">
-          Admin access
-        </Link>
-        <p className="text-[10px] text-zinc-400">Version {process.env.NEXT_PUBLIC_BUILD_ID}</p>
+        <div className="mt-auto flex flex-col items-center gap-2 pt-4">
+          <Link href="/fullcount/admin" className="text-sm text-[#7993c2] underline underline-offset-4 hover:text-[#253551]">
+            Admin access
+          </Link>
+          <p className="text-[10px] text-zinc-400">Version {process.env.NEXT_PUBLIC_BUILD_ID}</p>
+        </div>
       </div>
     </div>
   );

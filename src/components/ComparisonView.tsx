@@ -3,7 +3,8 @@
 import Link from "next/link";
 import DeliveryControls from "@/components/DeliveryControls";
 import { deltaColor, formatDelta } from "@/lib/reportVisuals";
-import { DOOR_FULLCOUNT, HOME_HREF, type Door } from "@/lib/doors";
+import { DOOR_FULLCOUNT, DOOR_IM, HOME_HREF, type Door } from "@/lib/doors";
+import { IM_SITE } from "@/lib/imSite";
 import type { ComparisonRow } from "@/lib/supabase/types";
 
 function ChangeCell({ before, after }: { before: number | null; after: number | null }) {
@@ -45,15 +46,60 @@ export default function ComparisonView({
     }
   }
 
+  const isIm = door === DOOR_IM;
+  // Intentional Ministries: square condensed button like the website's.
+  // Full Count keeps its familiar pill shape.
+  const buttonClass = isIm
+    ? "inline-flex min-h-12 items-center justify-center whitespace-nowrap border-2 border-[#253551] px-3 py-3 text-center font-[family-name:var(--font-barlow-condensed)] text-[0.95rem] font-semibold uppercase tracking-[0.04em] text-[#253551] hover:bg-[#253551] hover:text-white"
+    : "inline-flex min-h-11 items-center justify-center rounded-full border border-[#253551] px-5 py-2.5 text-center text-sm font-medium text-[#253551] hover:bg-[#253551] hover:text-white";
+
   return (
     <div className="flex w-full flex-col gap-8">
-      <Link href={homeHref} className="self-start text-sm font-medium text-[#7993c2] hover:text-[#253551]">
-        ← Home
-      </Link>
+      {/* Done message, delivery buttons and the way out come first, so they
+          are on screen right away; the list of answers follows. */}
+      <div className="flex flex-col gap-5 border-l-4 border-[#7993c2] bg-[#eef1f6] p-5">
+        <div>
+          <h1 className="text-2xl font-semibold" style={{ color: "#253551" }}>
+            You&apos;re done{firstName ? `, ${firstName}` : ""}.
+          </h1>
+          <p className="mt-1 text-sm text-zinc-700">
+            {baselineOnly
+              ? "Your assessment is saved. Your answers are below."
+              : "Your final assessment is saved. Here is how you've grown."}
+          </p>
+        </div>
+
+        <DeliveryControls
+          pdfEndpoint="/api/report/pdf"
+          emailEndpoint="/api/report/email"
+          payload={{ rows, firstName, baselineOnly, goalBaseline, goalRetake, door }}
+          downloadFilename="personal-assessment-results.pdf"
+        />
+
+        <div className="flex flex-col gap-3 border-t border-[#ccd0d6] pt-5">
+          {isIm ? (
+            <a href={IM_SITE} className={buttonClass}>
+              Back to intentionalministries.com
+            </a>
+          ) : (
+            <Link href={homeHref} className={buttonClass}>
+              Back to the Full Count home screen
+            </Link>
+          )}
+          <p className="text-sm text-zinc-700">
+            Want to take it again? Come back any time, tap{" "}
+            <Link href={isIm ? "/assessment?track=returning" : "/fullcount/start?track=returning"} className="font-semibold text-[#253551] underline">
+              I&apos;m returning
+            </Link>
+            , and enter your details.
+          </p>
+        </div>
+      </div>
+
       <div className="text-center">
-        <h1 className="text-xl font-semibold" style={{ color: "#253551" }}>
+        <h2 className="text-xl font-semibold" style={{ color: "#253551" }}>
           Your Results
-        </h1>
+        </h2>
         <p className="mt-1 text-sm text-zinc-600">
           {baselineOnly ? "Your answers from this assessment" : "Before-and-after comparison"}
         </p>
@@ -124,20 +170,6 @@ export default function ComparisonView({
         </div>
       ))}
 
-      <DeliveryControls
-        pdfEndpoint="/api/report/pdf"
-        emailEndpoint="/api/report/email"
-        payload={{ rows, firstName, baselineOnly, goalBaseline, goalRetake, door }}
-        downloadFilename="personal-assessment-results.pdf"
-      />
-
-      <Link
-        href={homeHref}
-        className="rounded-full px-5 py-2.5 text-center text-sm font-medium text-white hover:opacity-90"
-        style={{ backgroundColor: "#7993c2" }}
-      >
-        Return to home screen
-      </Link>
     </div>
   );
 }

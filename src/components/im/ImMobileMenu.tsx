@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { imMainNav } from "@/lib/imSite";
+import ImLeaveLink from "./ImLeaveLink";
 
 const marker = {
   discipleship: "bg-navy",
@@ -52,13 +53,13 @@ export default function ImMobileMenu() {
         <ul className="divide-y divide-gray/60 border-t border-gray/60 px-4 sm:px-6">
           {imMainNav.map((item) => (
             <li key={item.href}>
-              <a href={item.href} className="flex items-center gap-4 py-5">
+              <ImLeaveLink href={item.href} className="flex items-center gap-4 py-5">
                 <span
                   className={`h-8 w-1.5 shrink-0 opacity-60 ${marker[item.series ?? "default"]}`}
                   aria-hidden
                 />
                 <span className="display text-[2rem] text-navy">{item.label}</span>
-              </a>
+              </ImLeaveLink>
             </li>
           ))}
         </ul>

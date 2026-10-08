@@ -7,6 +7,7 @@ import {
   fetchQuestions,
   saveResponse,
 } from "@/lib/assessment";
+import { InProgressMarker } from "@/components/AssessmentGuards";
 import type { Question } from "@/lib/supabase/types";
 
 const SCORES = [1, 2, 3, 4, 5];
@@ -69,6 +70,12 @@ export default function QuestionForm({
       cancelled = true;
     };
   }, [categorySlug, submissionId]);
+
+  // Switching between the question list and the review screen starts at the
+  // top. (Tapping Change on a review row scrolls to that question afterwards.)
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [reviewing]);
 
   const applicableQuestions = useMemo(() => {
     if (!questions) return [];
@@ -186,8 +193,11 @@ export default function QuestionForm({
   if (reviewing) {
     return (
       <div className="flex w-full flex-col gap-6">
+        <InProgressMarker />
         <div>
-          <h1 className="text-xl font-semibold text-[#253551]">Review your answers</h1>
+          <h1 className="text-xl font-semibold text-[#253551]">
+            Almost done. Review your answers, then tap Confirm.
+          </h1>
           <p className="mt-1 text-sm text-zinc-600">
             Tap Change on anything you&apos;d like to update before submitting.
           </p>
@@ -195,7 +205,7 @@ export default function QuestionForm({
 
         {sections.map((group) => (
           <div key={group.section} className="flex flex-col gap-3">
-            <h2 className="-mx-6 bg-[#253551] px-6 py-2.5 text-sm font-semibold uppercase tracking-wide text-white">
+            <h2 className="section-bar -mx-6 bg-[#253551] px-6 py-2.5 text-sm font-semibold uppercase tracking-wide text-white">
               {group.section}
             </h2>
             {group.questions.map((q) => (
@@ -235,32 +245,40 @@ export default function QuestionForm({
           </div>
         )}
 
-        {submitError && <p className="text-sm text-red-600">{submitError}</p>}
+        {/* Room so the pinned bar below never covers the last answer */}
+        <div className="h-32" aria-hidden />
 
-        <button
-          type="button"
-          disabled={submitting}
-          onClick={handleSubmit}
-          className="rounded-full bg-[#253551] px-5 py-3 text-sm font-medium text-white hover:bg-[#1a2740] disabled:opacity-50"
-        >
-          {submitting ? "Submitting..." : "Confirm & Submit"}
-        </button>
-        <button
-          type="button"
-          onClick={() => setReviewing(false)}
-          className="text-sm font-medium text-[#7993c2] hover:text-[#253551]"
-        >
-          ← Back to editing
-        </button>
+        {/* Pinned to the bottom of the screen so Confirm is always in view */}
+        <div className="fixed inset-x-0 bottom-0 z-30 border-t border-[#ccd0d6] bg-white px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 shadow-[0_-6px_16px_-8px_rgba(26,34,51,0.25)]">
+          <div className="mx-auto flex w-full max-w-md flex-col gap-2 sm:max-w-xl lg:max-w-2xl">
+            {submitError && <p className="text-sm text-red-600">{submitError}</p>}
+            <button
+              type="button"
+              disabled={submitting}
+              onClick={handleSubmit}
+              className="rounded-full bg-[#253551] px-5 py-3 text-sm font-medium text-white hover:bg-[#1a2740] disabled:opacity-50"
+            >
+              {submitting ? "Submitting..." : "Confirm & Submit"}
+            </button>
+            <button
+              type="button"
+              onClick={() => setReviewing(false)}
+              className="py-1 text-sm font-medium text-[#7993c2] hover:text-[#253551]"
+            >
+              ← Back to editing
+            </button>
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
     <div className="flex w-full flex-col gap-8">
+      <InProgressMarker />
       {sections.map((group) => (
         <div key={group.section} className="flex flex-col gap-5">
-          <h2 className="-mx-6 bg-[#253551] px-6 py-2.5 text-sm font-semibold uppercase tracking-wide text-white">
+          <h2 className="section-bar -mx-6 bg-[#253551] px-6 py-2.5 text-sm font-semibold uppercase tracking-wide text-white">
             {group.section}
           </h2>
           {group.questions.map((q) => (
@@ -294,7 +312,7 @@ export default function QuestionForm({
 
       {goalQuestion && (
         <div id={`question-${goalQuestion.id}`} className="flex flex-col gap-2 scroll-mt-6">
-          <h2 className="-mx-6 bg-[#253551] px-6 py-2.5 text-sm font-semibold uppercase tracking-wide text-white">
+          <h2 className="section-bar -mx-6 bg-[#253551] px-6 py-2.5 text-sm font-semibold uppercase tracking-wide text-white">
             {goalQuestion.section}
           </h2>
           <p className="text-base font-semibold text-zinc-900">{goalQuestion.prompt}</p>

@@ -101,7 +101,7 @@ body {
   color: #253551;
 }
 .im-root .im-card h1 {
-  font-size: 2.5rem;
+  font-size: 2rem;
 }
 .im-root .im-card h2 {
   font-size: 1.75rem;
@@ -116,4 +116,11 @@ body {
   text-transform: uppercase;
   letter-spacing: 0.1em;
   min-height: 3rem;
+}
+/* Blue category bars on the question and review screens: white text, always. */
+.im-root .im-card h2.section-bar {
+  color: #ffffff;
+  font-size: 1rem;
+  letter-spacing: 0.12em;
+  line-height: 1.3;
 }
