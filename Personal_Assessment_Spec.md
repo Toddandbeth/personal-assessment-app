@@ -271,7 +271,12 @@ single with children 37.
 The previous Men's list was retired (kept in the database but hidden; never shown or reported). The
 database only hands out active questions, and completion/reporting ignore retired ones.
 
-### 5B. High School Assessment — Final List (Full Count door only)
+### 5B. High School Assessment — Final List (37 questions + Goal; Full Count door only)
+
+Every student is asked every question (no branching). A score of 5 is always the strong answer.
+The previous High School list was retired (kept in the database but hidden; never shown or reported), the same
+way as the old adult list.
+
 
 **Spiritual Disciplines**
 1. Do you read the Bible daily?
@@ -282,48 +287,57 @@ database only hands out active questions, and completion/reporting ignore retire
 6. Are you generous with what you have?
 7. Are you regularly involved (attending) in a local church?
 
+**Heart and Identity**
+8. Do you find your identity and worth in Christ rather than in performance, appearance, or popularity?
+9. How close do you feel to God right now?
+10. Are you free from bitterness or unforgiveness toward anyone?
+11. How would you rate your emotional health (anxiety, discouragement, loneliness)?
+
 **Community and Accountability**
-8. Do you regularly meet with other believers?
-9. Are you in an accountable relationship?
+12. Do you regularly meet with other believers?
+13. Does someone know your real struggles and ask you hard questions?
+14. Are you honest with others about your real struggles?
 
 **Outward-Facing Faith**
-10. Do you know how to share your faith with others?
-11. Are you intentional about investing in those around you?
-12. Do you give of your time (serve) at a local church or ministry?
+15. Do you know how to share your faith with others?
+16. Are you intentional about investing in those around you?
+17. Do you give of your time (serve) at a local church or ministry?
 
 **Personal Holiness**
-13. Are you disciplining yourself for godliness?
-14. How would you rate the health of your social media habits?
-15. Rate your purity (what you watch or look at, thought life)
-16. How well do you control or manage your anger?
+18. Are you disciplining yourself for godliness?
+19. How would you rate the health of your social media habits?
+20. Rate your purity from pornography and sexual content (including sex scenes in shows, movies, and online).
+21. Rate your thought life.
+22. Are you free from anything that controls you (alcohol, drugs, vaping, gaming, or any other habit)?
+23. How well do you control or manage your anger?
 
 **Time and Stewardship**
-17. Do you manage your time well?
-18. Are you a good steward of the money you have?
+24. Do you manage your time well?
+25. Are you a good steward of the money you have?
+26. Are you honest in your schoolwork (no cheating or cutting corners)?
 
 **Spiritual Influence**
-19. Do you pray with your friends or teammates?
-20. Are you a spiritual influence on those around you?
+27. Do you pray with your friends or teammates?
+28. Do you represent Christ well and influence others positively at school and on your team?
 
 **Family**
-21. Are you patient with your family?
-22. Are you spending quality time with your family?
+29. Are you patient with your family?
+30. Are you spending quality time with your family?
+31. Do you honor and respect your parents?
 
 **Purity and Relationships**
-23. Do you honor purity in how you treat girls you like or date?
-24. Are you intentional about who you spend time with romantically?
+32. Do you honor purity in how you treat girls you like or date?
+33. Are you intentional about who you spend time with romantically?
 
 **Physical Health**
-25. Do you eat healthy?
-26. Do you regularly exercise?
+34. Do you eat healthy?
+35. Do you regularly exercise?
 
 **Baseball / Competition**
-27. Do you compete with integrity, even when no one's watching?
-28. Are you a good teammate, encouraging others rather than tearing them down?
+36. Do you compete with integrity, even when no one's watching?
+37. Are you a good teammate, encouraging others rather than tearing them down?
 
 **Goal** (free text, private, optional — see Section 7)
-
-No branching logic for the High School list.
 
 ---
 
