@@ -111,7 +111,9 @@ Ministries admin (Section 8B).
 **Home screen:** heading "Personal Assessment" with "Full Count" beneath it, explanatory copy, and three
 buttons: **"I'm in a group"**, **"I'm on my own"**, **"I'm returning"**, plus an **Admin access** link.
 (Old addresses `/start` and `/admin` redirect to `/fullcount/start` and `/fullcount/admin`.)
-This door is kept out of search engines (noindex tag, header, and robots.txt).
+This door is kept out of search engines (noindex tag, header, and robots.txt). The front screen has the
+same family look as the Intentional Ministries front screen (navy texture header, condensed capital headline,
+large square buttons) but keeps its own wording and stays mobile-only.
 
 **Fields (typed):** Region and Group Number (group path only), First Name, Last Four of Phone. No PIN.
 
@@ -135,15 +137,33 @@ from last time, or complete the final assessment"; completed pair → "review fi
 assessment"; no match → offer the normal entry paths.
 
 **Before submitting**, every assessment (baseline and retake) shows a review screen of the answers from
-the current sitting only, with the ability to change any answer.
+the current sitting only, with the ability to change any answer. The review screen opens with "Almost done.
+Review your answers, then tap Confirm." and the Confirm button stays pinned to the bottom of the screen.
+
+**Screen behaviour (both doors):** every change of screen starts at the top of the new screen. The results
+screen opens with a "You're done" message and the Download PDF and Email buttons, then a button back out
+(Intentional Ministries: back to intentionalministries.com; Full Count: back to the Full Count home screen)
+and a note that the person can come back with "I'm returning" to take it again; the list of answers follows.
 
 ### 4B. Intentional Ministries door — `/` (front screen) and `/assessment`
 
-Branding: Intentional Ministries only (navy `#253551`, light gray `#ccd0d6`, accent blue `#7993c2`,
-Barlow Condensed headlines, Barlow body; logo from `public/brand/im-logo.*`, text wordmark until then).
+Look and feel: copied from the main website (www.intentionalministries.com): navy `#253551`, light gray
+`#ccd0d6`, accent blue `#7993c2`, Barlow Condensed headlines, Barlow body, square-cornered buttons, the sticky
+header with the two-color band, logo and menu (Discipleship, Marriage, Resources, About, Contact, all linking to
+the main website), a navy "bold banner" on the front screen using the website's texture and I mark, and the
+website's footer. The logo and image files are copied from the website project into `src/assets/im/`. The
+screens after the front screen use the same fonts, colors and square buttons. Phone-first and also designed for
+desktop (the only door that is not mobile-only).
+
+The big website footer shows only on the front screen. Every other screen (entry form, questions, review,
+results, admin) has a thin one-line footer, and the logo bar stays at the top.
+
+The logo and every menu or footer link go to the main website. If someone taps one in the middle of the
+questions or review, the app first asks "Leave the assessment? Your answers so far are saved, and you can come
+back with I'm returning."
+
 No mention of Full Count, regions, or groups anywhere, including emails and PDFs. No Admin link on any
-public screen. A link back to intentionalministries.com. Indexable by search engines, with its own title
-and description.
+public screen. Indexable by search engines, with its own title and description.
 
 **Front screen:** explains what the assessment is, that it is taken once now and again later to see
 progress, that individual answers are private, and what the person needs (first name, last four of phone,
@@ -383,6 +403,21 @@ No branching logic for the High School list.
   Both are sent from the same verified mail domain.
 - PINs never appear in any email or PDF.
 - Individual reports are never visible to admins or leaders in aggregate views.
+
+---
+
+## 9A. Addresses
+
+- Intentional Ministries: `https://personal-assessment.intentionalministries.com/`
+- Full Count: `https://personal-assessment.intentionalministries.com/fullcount`
+- Full Count admin: `/fullcount/admin`; Intentional Ministries admin: the secret address held in `IM_ADMIN_PATH`.
+- Old addresses: `/start`, `/admin` forward to `/fullcount/...`. `discipleship-assessment-phi.vercel.app` and
+  `discipleship-assessment-intentional-ministries.vercel.app` were removed. Vercel re-adds
+  `personal-assessment-intentional-ministries.vercel.app` automatically on every deploy, so that address
+  forwards to the main address instead.
+- Environment variables (set on Vercel and in `.env.local`): `ADMIN_ACCESS_CODE_FULLCOUNT`,
+  `ADMIN_ACCESS_CODE_INTENTIONALMINISTRIES`, `IM_ADMIN_PATH` (plus the existing Supabase, session-secret and
+  Resend settings).
 
 ---
 

@@ -10,6 +10,15 @@ const nextConfig: NextConfig = {
 
   async redirects() {
     return [
+      // Vercel adds this project-name address automatically on every deploy and
+      // it can't be removed, so anyone who lands on it is sent to the real
+      // address (temporary redirect, path and query carried along).
+      {
+        source: "/:path*",
+        has: [{ type: "host", value: "personal-assessment-intentional-ministries.vercel.app" }],
+        destination: "https://personal-assessment.intentionalministries.com/:path*",
+        permanent: false,
+      },
       // The Full Count pages moved under /fullcount. These old addresses
       // keep working (query strings like ?track=group are carried along).
       { source: "/start", destination: "/fullcount/start", permanent: true },
