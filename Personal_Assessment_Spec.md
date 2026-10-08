@@ -162,6 +162,14 @@ inside the database, never in the browser. Failed or unmatched attempts are coun
 database; 8 in 15 minutes locks that name+number for 15 minutes, with the same generic message whether or
 not such a person exists. A forgotten PIN cannot be recovered.
 
+
+**If the page reloads mid-assessment** (pull-to-refresh, a phone dropping the tab): on both doors the person
+returns to the same questions with their saved answers. The browser tab remembers (until the tab closes) their
+first name, last four and where they were. The PIN is never stored: on the Intentional Ministries door they type
+the PIN again and the database checks it before they continue. The app never reloads itself mid-assessment
+(the version check runs only on the front screens), and pull-to-refresh is switched off on the entry and
+question screens.
+
 ---
 
 ## 5. Question Sets

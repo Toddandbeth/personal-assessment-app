@@ -15,9 +15,11 @@ import ComingSoonPlaceholder from "@/components/ComingSoonPlaceholder";
 import MarriedChildrenGate from "@/components/MarriedChildrenGate";
 import QuestionForm from "@/components/QuestionForm";
 import ComparisonView from "@/components/ComparisonView";
+import ResumePinForm from "@/components/ResumePinForm";
 import { useNoPullToRefresh } from "@/components/AssessmentGuards";
 import { archiveAndRestart, checkIdentity, findReturning, type IdentityArgs } from "@/lib/identity";
 import { getComparison, startSubmission } from "@/lib/assessment";
+import { clearResume, isReloadNavigation, loadResume, saveResume, type ResumeState } from "@/lib/resume";
 import { DOOR_FULLCOUNT, DOOR_IM, HOME_HREF, type Door } from "@/lib/doors";
 import type {
   ComparisonRow,
@@ -40,7 +42,8 @@ type Phase =
   | "results_error"
   | "returning_picker"
   | "returning_baseline_prompt"
-  | "returning_not_found";
+  | "returning_not_found"
+  | "resume_pin";
 
 function friendlyError(err: unknown, fallback: string): string {
   const message = (err as { message?: string } | null)?.message ?? "";
@@ -81,6 +84,84 @@ export default function StartFlow({
   const [returningCandidates, setReturningCandidates] = useState<ReturningCandidate[]>([]);
 
   useNoPullToRefresh();
+
+  // Mid-assessment reload recovery (see src/lib/resume.ts). `ready` stays false
+  // until we've looked, so a returning person never sees a flash of the
+  // empty entry form.
+  const [ready, setReady] = useState(false);
+  const [resumeSaved, setResumeSaved] = useState<ResumeState | null>(null);
+
+  useEffect(() => {
+    const saved = loadResume();
+    if (saved && saved.door === door && isReloadNavigation()) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setLastArgs({ ...saved.args, pin: null });
+      setCategory(saved.category);
+      setSubmissionId(saved.submissionId);
+      setIsMarried(saved.isMarried);
+      setHasChildren(saved.hasChildren);
+      setPendingKind(saved.kind);
+      if (saved.door === DOOR_IM) {
+        // The PIN is never stored: ask for it again before going on.
+        setResumeSaved(saved);
+        setPhase("resume_pin");
+      } else {
+        setPhase("questions");
+      }
+    } else if (saved) {
+      // A fresh visit (not a reload): forget any stale resume point.
+      clearResume();
+    }
+    setReady(true);
+  }, [door]);
+
+  // Remember where we are while questions are on screen; forget it once the
+  // assessment is submitted.
+  useEffect(() => {
+    if (phase === "questions" && submissionId && lastArgs && category) {
+      const { pin: _pin, ...argsWithoutPin } = lastArgs;
+      void _pin;
+      saveResume({
+        door,
+        args: argsWithoutPin,
+        category,
+        submissionId,
+        isMarried,
+        hasChildren,
+        kind: pendingKind,
+      });
+    } else if (phase === "baseline_results" || phase === "comparison" || phase === "results_error") {
+      clearResume();
+    }
+  }, [phase, submissionId, lastArgs, category, isMarried, hasChildren, pendingKind, door]);
+
+  async function handleResumePin(pin: string) {
+    if (!resumeSaved) return;
+    setSubmitting(true);
+    setErrorMessage(null);
+    const args: IdentityArgs = { ...resumeSaved.args, pin };
+    try {
+      // The database checks the PIN here. A wrong PIN says "participant not
+      // found"; a right one finds the person (and, if they have no completed
+      // baseline yet, says so, which also proves the PIN was right).
+      await getComparison(args);
+    } catch (err) {
+      const message = (err as { message?: string } | null)?.message ?? "";
+      if (message.includes("too_many_attempts")) {
+        setErrorMessage(friendlyError(err, ""));
+        setSubmitting(false);
+        return;
+      }
+      if (!message.includes("no completed baseline")) {
+        setErrorMessage("That PIN didn't match. Please try again.");
+        setSubmitting(false);
+        return;
+      }
+    }
+    setLastArgs(args);
+    setPhase("questions");
+    setSubmitting(false);
+  }
 
   // Every time the screen changes (submit, continue, back, results), start
   // the new screen at the top instead of wherever the last one was scrolled.
@@ -300,6 +381,27 @@ export default function StartFlow({
 
   async function handleQuestionsCompleted() {
     await loadResults(pendingKind === "baseline" ? "baseline_results" : "comparison");
+  }
+
+  if (!ready) return null;
+
+  if (phase === "resume_pin" && resumeSaved) {
+    return (
+      <ResumePinForm
+        firstName={resumeSaved.args.firstName}
+        submitting={submitting}
+        errorMessage={errorMessage}
+        onSubmit={handleResumePin}
+        onStartOver={() => {
+          clearResume();
+          setSubmissionId(null);
+          setLastArgs(null);
+          setResumeSaved(null);
+          setErrorMessage(null);
+          setPhase("entry");
+        }}
+      />
+    );
   }
 
   if (phase === "begin") {
